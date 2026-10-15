@@ -7,6 +7,7 @@
 #include "draw.hpp"
 #include "drop.hpp"
 #include "layout.hpp"
+#include "settings.hpp"
 #include "storage.hpp"
 #include "titlebar.hpp"
 
@@ -48,7 +49,7 @@ void commit_best(App& app)
 
 void start_game(App& app)
 {
-    game_start(app.game, static_cast<uint32_t>(SDL_GetTicksNS()));
+    game_start(app.game, static_cast<uint32_t>(SDL_GetTicksNS()), app.settings.grid);
     app.previous_best = app.best;
     app.view = GameView{};
     app.over_pending = false;
@@ -58,15 +59,19 @@ void start_game(App& app)
 void toggle_fullscreen(App& app)
 {
     bool full = (SDL_GetWindowFlags(app.window) & SDL_WINDOW_FULLSCREEN) != 0;
+    app.settings.fullscreen = !full;
     SDL_SetWindowFullscreen(app.window, !full);
+    save_settings(app.settings);
 }
 
 void activate_menu(App& app, int which)
 {
     if (which == kMenuPlay) {
         start_game(app);
-    } else if (which == kMenuFullscreen) {
-        toggle_fullscreen(app);
+    } else if (which == kMenuSettings) {
+        app.reset_armed = false;
+        app.panel_pressed = -1;
+        app.screen = Screen::Settings;
     } else {
         app.quit = true;
     }
@@ -121,7 +126,7 @@ void play_down(App& app, float x, float y)
             app.view.return_slot = -1;
             app.view.hand_slot = i;
             app.view.pointer_x = x;
-            app.view.pointer_y = y - kHandLift;
+            app.view.pointer_y = y - static_cast<float>(app.settings.lift);
             return;
         }
     }
@@ -158,7 +163,7 @@ void play_up(App& app, float x, float y)
         return;
     }
     app.view.pointer_x = x;
-    app.view.pointer_y = y - kHandLift;
+    app.view.pointer_y = y - static_cast<float>(app.settings.lift);
     const Piece& piece = piece_list()[app.game.tray[slot]];
     Drop drop = find_drop(app.game.board, piece, app.view.pointer_x, app.view.pointer_y);
     app.view.hand_slot = -1;
@@ -188,6 +193,41 @@ int pause_hit(float x, float y)
     return inside(l.menu, x, y) ? 1 : -1;
 }
 
+int settings_hit(float x, float y)
+{
+    SettingsLayout l = settings_layout();
+    for (int i = 0; i < 4; i++) {
+        if (inside(l.option[i], x, y)) {
+            return i;
+        }
+    }
+    return inside(l.back, x, y) ? 4 : -1;
+}
+
+void settings_activate(App& app, int hit)
+{
+    bool was_armed = app.reset_armed;
+    app.reset_armed = false;
+    if (hit == 0) {
+        app.settings.grid = next_grid(app.settings.grid);
+    } else if (hit == 1) {
+        app.settings.lift = next_lift(app.settings.lift);
+    } else if (hit == 2) {
+        toggle_fullscreen(app);
+    } else if (hit == 3) {
+        if (was_armed) {
+            app.best = 0;
+            app.game.score = ScoreState{};
+            save_best(0);
+        } else {
+            app.reset_armed = true;
+        }
+    } else {
+        go_menu(app);
+    }
+    save_settings(app.settings);
+}
+
 void pointer_down(App& app, Gfx& g, float x, float y)
 {
     if (app.screen == Screen::Menu) {
@@ -197,6 +237,8 @@ void pointer_down(App& app, Gfx& g, float x, float y)
         play_down(app, x, y);
     } else if (app.screen == Screen::Pause) {
         app.panel_pressed = pause_hit(x, y);
+    } else if (app.screen == Screen::Settings) {
+        app.panel_pressed = settings_hit(x, y);
     } else {
         bool chip = app.game.score.score > app.previous_best;
         app.panel_pressed = over_hit(g, x, y, chip);
@@ -207,7 +249,7 @@ void pointer_move(App& app, float x, float y)
 {
     if (app.screen == Screen::Play && app.view.hand_slot >= 0) {
         app.view.pointer_x = x;
-        app.view.pointer_y = y - kHandLift;
+        app.view.pointer_y = y - static_cast<float>(app.settings.lift);
     }
 }
 
@@ -232,6 +274,13 @@ void pointer_up(App& app, Gfx& g, float x, float y)
             } else {
                 go_menu(app);
             }
+        }
+    } else if (app.screen == Screen::Settings) {
+        int hit = settings_hit(x, y);
+        int pressed = app.panel_pressed;
+        app.panel_pressed = -1;
+        if (hit >= 0 && hit == pressed) {
+            settings_activate(app, hit);
         }
     } else {
         bool chip = app.game.score.score > app.previous_best;
@@ -260,7 +309,7 @@ void key_down(App& app, const SDL_KeyboardEvent& key)
             app.screen = Screen::Pause;
         } else if (app.screen == Screen::Pause) {
             app.screen = Screen::Play;
-        } else if (app.screen == Screen::Over) {
+        } else if (app.screen == Screen::Over || app.screen == Screen::Settings) {
             go_menu(app);
         }
         return;
@@ -286,6 +335,10 @@ void app_init(App& app, Gfx& g, SDL_Window* window)
     }
     apply_titlebar(app, g);
     app.best = load_best();
+    app.settings = load_settings();
+    if (app.settings.fullscreen) {
+        SDL_SetWindowFullscreen(window, true);
+    }
     app.menu.best = app.best;
 }
 
@@ -301,6 +354,7 @@ void app_event(App& app, Gfx& g, SDL_Event& event)
         break;
     case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
     case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
+        app.settings.fullscreen = event.type == SDL_EVENT_WINDOW_ENTER_FULLSCREEN;
         apply_titlebar(app, g);
         break;
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
@@ -400,6 +454,14 @@ void app_draw(App& app, Gfx& g)
         pv.score = app.game.score.score;
         pv.pressed = app.panel_pressed;
         draw_pause(g, pv);
+    } else if (app.screen == Screen::Settings) {
+        SettingsView sv;
+        sv.grid = app.settings.grid;
+        sv.lift = app.settings.lift;
+        sv.fullscreen = app.settings.fullscreen;
+        sv.reset_armed = app.reset_armed;
+        sv.pressed = app.panel_pressed;
+        draw_settings(g, sv);
     } else {
         OverView ov;
         ov.board = app.game.board;
@@ -415,4 +477,5 @@ void app_draw(App& app, Gfx& g)
 void app_shutdown(App& app)
 {
     commit_best(app);
+    save_settings(app.settings);
 }

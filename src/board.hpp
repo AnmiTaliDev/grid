@@ -10,6 +10,7 @@
 constexpr int kBoardSize = 8;
 
 struct Board {
+    int size = kBoardSize;
     std::array<std::array<int, kBoardSize>, kBoardSize> cell{};
 };
 
@@ -19,7 +20,7 @@ struct Lines {
 };
 
 int line_count(Lines lines);
-uint64_t line_cell_mask(Lines lines);
+uint64_t line_cell_mask(Lines lines, int size);
 uint64_t cell_bit(int row, int col);
 
 bool can_place(const Board& board, const Piece& piece, int row, int col);

@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include "game.hpp"
 
-void game_start(Game& game, uint32_t seed)
+void game_start(Game& game, uint32_t seed, int size)
 {
     game.board = Board{};
+    game.board.size = size;
     game.score = ScoreState{};
     game.over = false;
     game.rng.seed(seed);
@@ -25,7 +26,7 @@ MoveResult game_place(Game& game, int slot, int row, int col)
     place(game.board, piece, row, col);
     Lines lines = full_lines(game.board);
     result.lines = line_count(lines);
-    result.cleared = line_cell_mask(lines);
+    result.cleared = line_cell_mask(lines, game.board.size);
     clear_lines(game.board, lines);
     result.gain = apply_move_score(game.score, static_cast<int>(piece.cells.size()), result.lines);
     result.ok = true;

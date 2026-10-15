@@ -14,7 +14,7 @@ constexpr float kReturnMs = 120.0f;
 
 enum MenuButton {
     kMenuPlay,
-    kMenuFullscreen,
+    kMenuSettings,
     kMenuQuit,
 };
 
@@ -49,6 +49,14 @@ struct OverView {
     int score = 0;
     int previous_best = 0;
     bool new_best = false;
+    int pressed = -1;
+};
+
+struct SettingsView {
+    int grid = 8;
+    int lift = 100;
+    bool fullscreen = false;
+    bool reset_armed = false;
     int pressed = -1;
 };
 

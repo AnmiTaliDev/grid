@@ -20,7 +20,7 @@ const Sprite& bone_tile_sprite(Gfx& g);
 const Sprite& hand_tile_sprite(Gfx& g, int glaze);
 const Sprite& well_sprite(Gfx& g, float size, bool dim);
 const Sprite& ghost_sprite(Gfx& g, int glaze);
-const Sprite& bed_sprite(Gfx& g, bool dim);
+const Sprite& bed_sprite(Gfx& g, bool dim, int size);
 const Sprite& tray_slot_sprite(Gfx& g);
 const Sprite& empty_slot_sprite(Gfx& g);
 const Sprite& raised_sprite(Gfx& g, const RaisedSpec& spec);

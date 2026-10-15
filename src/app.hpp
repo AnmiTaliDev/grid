@@ -6,12 +6,14 @@
 
 #include "game.hpp"
 #include "gfx.hpp"
+#include "settings.hpp"
 #include "views.hpp"
 
 enum class Screen {
     Menu,
     Play,
     Pause,
+    Settings,
     Over,
 };
 
@@ -30,6 +32,8 @@ struct App {
     bool finger_down = false;
     bool quit = false;
     float bar_h = 0;
+    Settings settings;
+    bool reset_armed = false;
 };
 
 void app_init(App& app, Gfx& g, SDL_Window* window);

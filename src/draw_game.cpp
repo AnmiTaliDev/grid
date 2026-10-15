@@ -10,9 +10,9 @@
 
 namespace {
 
-float cell_x(int col)
+float cell_x(int size, int col)
 {
-    return kBoardX + kCellPitch * static_cast<float>(col);
+    return board_x(size) + kCellPitch * static_cast<float>(col);
 }
 
 float cell_y(int row)
@@ -43,9 +43,9 @@ void draw_cells(Gfx& g, const GameView& v, const Piece* hand, Drop drop)
             ghost |= cell_bit(drop.row + c.row, drop.col + c.col);
         }
     }
-    for (int r = 0; r < kBoardSize; r++) {
-        for (int c = 0; c < kBoardSize; c++) {
-            float x = cell_x(c);
+    for (int r = 0; r < v.board.size; r++) {
+        for (int c = 0; c < v.board.size; c++) {
+            float x = cell_x(v.board.size, c);
             float y = cell_y(r);
             uint64_t bit = cell_bit(r, c);
             int value = v.board.cell[r][c];
@@ -67,14 +67,16 @@ void draw_would_clear(Gfx& g, const Board& board, const Piece& piece, Drop drop)
     Board after = board;
     place(after, piece, drop.row, drop.col);
     Lines lines = full_lines(after);
-    for (int r = 0; r < kBoardSize; r++) {
+    float span = bed_width(board.size) - 12;
+    float left = bed_x(board.size) + 6;
+    for (int r = 0; r < board.size; r++) {
         if (lines.rows >> r & 1) {
-            draw_sprite(g, would_clear_sprite(g, 472, 66), 34, 222 + kCellPitch * static_cast<float>(r));
+            draw_sprite(g, would_clear_sprite(g, span, 66), left, 222 + kCellPitch * static_cast<float>(r));
         }
     }
-    for (int c = 0; c < kBoardSize; c++) {
+    for (int c = 0; c < board.size; c++) {
         if (lines.cols >> c & 1) {
-            draw_sprite(g, would_clear_sprite(g, 66, 472), 34 + kCellPitch * static_cast<float>(c), 222);
+            draw_sprite(g, would_clear_sprite(g, 66, span), left + kCellPitch * static_cast<float>(c), 222);
         }
     }
 }
@@ -183,7 +185,7 @@ void draw_game(Gfx& g, const GameView& v)
     if (v.streak >= 2) {
         draw_streak_chip(g, v.streak);
     }
-    draw_sprite(g, bed_sprite(g, false), 28, 216);
+    draw_sprite(g, bed_sprite(g, false, v.board.size), bed_x(v.board.size), kBedY);
     const Piece* hand = nullptr;
     Drop drop;
     if (v.hand_slot >= 0 && v.tray[v.hand_slot] >= 0) {

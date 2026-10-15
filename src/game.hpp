@@ -24,5 +24,5 @@ struct MoveResult {
     uint64_t cleared = 0;
 };
 
-void game_start(Game& game, uint32_t seed);
+void game_start(Game& game, uint32_t seed, int size);
 MoveResult game_place(Game& game, int slot, int row, int col);

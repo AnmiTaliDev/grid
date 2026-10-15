@@ -21,7 +21,7 @@ Drop find_drop(const Board& board, const Piece& piece, float pointer_x, float po
 {
     Point o = footprint_origin(piece, pointer_x, pointer_y);
     Drop d;
-    d.col = static_cast<int>(std::floor((o.x - kBoardX) / kCellPitch + 0.5f));
+    d.col = static_cast<int>(std::floor((o.x - board_x(board.size)) / kCellPitch + 0.5f));
     d.row = static_cast<int>(std::floor((o.y - kBoardY) / kCellPitch + 0.5f));
     d.valid = can_place(board, piece, d.row, d.col);
     return d;

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include "sprites.hpp"
 
+#include "layout.hpp"
+
 namespace {
 
 constexpr int kKindTile = 1;
@@ -131,16 +133,17 @@ const Sprite& ghost_sprite(Gfx& g, int glaze)
     return store(g, key, c);
 }
 
-const Sprite& bed_sprite(Gfx& g, bool dim)
+const Sprite& bed_sprite(Gfx& g, bool dim, int size)
 {
-    SpriteKey key{kKindBed, 0, 0, 0, 0, 0, 0, 0, dim};
+    SpriteKey key{kKindBed, static_cast<float>(size), 0, 0, 0, 0, 0, 0, dim};
     if (const Sprite* s = cached(g, key)) {
         return *s;
     }
-    Canvas c = make_canvas(484, 492, 1);
-    fill_rr(c, {0, 8, 484, 484}, 24, dc(palette::kBedEdge, dim));
-    fill_rr(c, {0, 0, 484, 484}, 24, dc(palette::kSlate, dim));
-    ring_rr(c, {0, 0, 484, 484}, 24, 1, dc(palette::kSlateRing, dim));
+    float w = bed_width(size);
+    Canvas c = make_canvas(w, w + 8, 1);
+    fill_rr(c, {0, 8, w, w}, 24, dc(palette::kBedEdge, dim));
+    fill_rr(c, {0, 0, w, w}, 24, dc(palette::kSlate, dim));
+    ring_rr(c, {0, 0, w, w}, 24, 1, dc(palette::kSlateRing, dim));
     return store(g, key, c);
 }
 
@@ -256,8 +259,8 @@ void warm_sprites(Gfx& g)
     well_sprite(g, 54, false);
     well_sprite(g, 54, true);
     well_sprite(g, 28, false);
-    bed_sprite(g, false);
-    bed_sprite(g, true);
+    bed_sprite(g, false, 8);
+    bed_sprite(g, true, 8);
     tray_slot_sprite(g);
     empty_slot_sprite(g);
     pause_button_sprite(g, false);

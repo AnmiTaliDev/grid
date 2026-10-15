@@ -21,10 +21,10 @@ void draw_dimmed_base(Gfx& g, const Board& board, int score)
     fill_rect(g, {0, 0, kScreenW, kScreenH}, palette::kNight);
     draw_sprite(g, pause_button_sprite(g, false), 28, 28, 0.35f);
     draw_header_score(g, score, 0.35f);
-    draw_sprite(g, bed_sprite(g, true), 28, 216);
-    for (int r = 0; r < kBoardSize; r++) {
-        for (int c = 0; c < kBoardSize; c++) {
-            float x = kBoardX + kCellPitch * static_cast<float>(c);
+    draw_sprite(g, bed_sprite(g, true, board.size), bed_x(board.size), kBedY);
+    for (int r = 0; r < board.size; r++) {
+        for (int c = 0; c < board.size; c++) {
+            float x = board_x(board.size) + kCellPitch * static_cast<float>(c);
             float y = kBoardY + kCellPitch * static_cast<float>(r);
             int value = board.cell[r][c];
             if (value == 0) {

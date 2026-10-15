@@ -33,14 +33,14 @@ ButtonSpec menu_button(int which)
         return {{80, 544, 380, 60}, 14, 4, palette::kBone, palette::kBoneEdge, "Play", {26, 800, -0.26f},
                 palette::kInk, true};
     }
-    if (which == kMenuFullscreen) {
-        return {{80, 640, 188, 60}, 14, 4, palette::kButtonFace, palette::kBedEdge, "Fullscreen", {17, 600},
+    if (which == kMenuSettings) {
+        return {{80, 640, 188, 60}, 14, 4, palette::kButtonFace, palette::kBedEdge, "Settings", {17, 600},
                 palette::kBone};
     }
     return {{272, 640, 188, 60}, 14, 4, palette::kButtonFace, palette::kBedEdge, "Quit", {17, 600}, palette::kBone};
 }
 
-void draw_menu(Gfx& g, const MenuView& v)
+void draw_backdrop(Gfx& g)
 {
     fill_rect(g, {0, 0, kScreenW, kScreenH}, palette::kNight);
     const Sprite& well = well_sprite(g, 28, false);
@@ -51,6 +51,11 @@ void draw_menu(Gfx& g, const MenuView& v)
     }
     SDL_FRect full = {0, 0, kScreenW, kScreenH};
     SDL_RenderTexture(g.renderer, g.vignette, nullptr, &full);
+}
+
+void draw_menu(Gfx& g, const MenuView& v)
+{
+    draw_backdrop(g);
     for (const WordCell& w : kWordmark) {
         draw_sprite(g, tile_sprite(g, 28, w.glaze, false), static_cast<float>(16 + 32 * w.col),
                     static_cast<float>(224 + 32 * w.row));

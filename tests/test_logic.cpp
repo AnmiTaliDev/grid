@@ -51,7 +51,7 @@ void test_placement_validity()
 void test_simultaneous_clear()
 {
     Game game;
-    game_start(game, 1);
+    game_start(game, 1, 8);
     int dot = find_piece("dot", 0);
     game.tray = {dot, dot, dot};
     for (int i = 1; i < kBoardSize; i++) {
@@ -66,6 +66,26 @@ void test_simultaneous_clear()
         assert(game.board.cell[0][i] == 0 && game.board.cell[i][0] == 0);
     }
     assert(game.score.score == 1 + 10 * 2 * 2 * 1);
+}
+
+void test_smaller_grid()
+{
+    Game game;
+    game_start(game, 3, 6);
+    assert(game.board.size == 6);
+    const Piece& bar3 = piece_list()[find_piece("bar3", 0)];
+    assert(can_place(game.board, bar3, 0, 3));
+    assert(!can_place(game.board, bar3, 0, 4));
+    assert(!can_place(game.board, bar3, 6, 0));
+    for (int c = 1; c < 6; c++) {
+        game.board.cell[2][c] = 1;
+    }
+    int dot = find_piece("dot", 0);
+    game.tray = {dot, dot, dot};
+    MoveResult r = game_place(game, 0, 2, 0);
+    assert(r.ok && r.lines == 1);
+    assert(__builtin_popcountll(r.cleared) == 6);
+    assert(game.board.cell[2][0] == 0 && game.board.cell[2][5] == 0);
 }
 
 void test_row_only_and_untouched()
@@ -104,7 +124,7 @@ void test_game_over()
     assert(any_piece_fits(board, {bar2, dot, -1}));
     assert(!any_piece_fits(board, {bar2, bar2, -1}));
     Game game;
-    game_start(game, 1);
+    game_start(game, 1, 8);
     game.board = board;
     game.tray = {dot, bar2, bar2};
     game.over = false;
@@ -118,7 +138,7 @@ void test_game_over()
 void test_tray_refill()
 {
     Game game;
-    game_start(game, 7);
+    game_start(game, 7, 8);
     int dot = find_piece("dot", 0);
     game.tray = {dot, -1, -1};
     MoveResult r = game_place(game, 0, 0, 0);
@@ -180,6 +200,7 @@ int main()
     test_piece_list();
     test_placement_validity();
     test_simultaneous_clear();
+    test_smaller_grid();
     test_row_only_and_untouched();
     test_game_over();
     test_tray_refill();
