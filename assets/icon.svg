@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>Grid</title>
+  <defs>
+    <g id="t">
+      <rect y="4" width="64" height="64" rx="12" fill="#A8412A"/>
+      <rect width="64" height="64" rx="12" fill="#EE6A4C"/>
+      <rect x="10.88" y="9.6" width="19.2" height="5.76" rx="2.88" fill="#fff" fill-opacity=".55"/>
+      <circle cx="36.16" cy="12.48" r="2.88" fill="#fff" fill-opacity=".55"/>
+    </g>
+    <g id="w">
+      <rect y="1" width="64" height="64" rx="12" fill="#fff" fill-opacity=".05"/>
+      <rect width="64" height="64" rx="12" fill="#0C1620"/>
+      <path d="M12 0H52A12 12 0 0 1 64 12V14A12 12 0 0 0 52 2H12A12 12 0 0 0 0 14V12A12 12 0 0 1 12 0Z" fill="#000" fill-opacity=".55"/>
+    </g>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#172733"/>
+  <rect x=".5" y=".5" width="511" height="511" rx="111.5" fill="none" stroke="#223646"/>
+  <use href="#w" x="119" y="82"/>
+  <use href="#t" x="189" y="82"/>
+  <use href="#t" x="259" y="82"/>
+  <use href="#w" x="329" y="82"/>
+  <use href="#t" x="119" y="152"/>
+  <use href="#w" x="189" y="152"/>
+  <use href="#w" x="259" y="152"/>
+  <use href="#t" x="329" y="152"/>
+  <use href="#t" x="119" y="222"/>
+  <use href="#w" x="189" y="222"/>
+  <use href="#w" x="259" y="222"/>
+  <use href="#w" x="329" y="222"/>
+  <use href="#t" x="119" y="292"/>
+  <use href="#w" x="189" y="292"/>
+  <use href="#t" x="259" y="292"/>
+  <use href="#t" x="329" y="292"/>
+  <use href="#w" x="119" y="362"/>
+  <use href="#t" x="189" y="362"/>
+  <use href="#t" x="259" y="362"/>
+  <use href="#w" x="329" y="362"/>
+</svg>
