@@ -108,21 +108,63 @@ std::vector<Piece> build_list()
 
 }
 
+namespace {
+
+std::vector<Piece>& storage()
+{
+    static std::vector<Piece> list = [] {
+        std::vector<Piece> built = build_list();
+        for (int i = 0; i < kCustomSlots; i++) {
+            built.push_back({"custom", -1, 0, 0, 0, 0, {}});
+        }
+        return built;
+    }();
+    return list;
+}
+
+int base_count()
+{
+    return static_cast<int>(storage().size()) - kCustomSlots;
+}
+
+}
+
 const std::vector<Piece>& piece_list()
 {
-    static const std::vector<Piece> list = build_list();
-    return list;
+    return storage();
+}
+
+int base_piece_count()
+{
+    return base_count();
+}
+
+int register_custom_piece(const std::vector<Cell>& cells, int glaze)
+{
+    static int next = 0;
+    int index = base_count() + next % kCustomSlots;
+    next++;
+    Piece& p = storage()[index];
+    p.cells = normalize(cells);
+    p.glaze = glaze;
+    p.rows = 0;
+    p.cols = 0;
+    for (const Cell& c : p.cells) {
+        p.rows = std::max(p.rows, c.row + 1);
+        p.cols = std::max(p.cols, c.col + 1);
+    }
+    return index;
 }
 
 int shape_count()
 {
-    return piece_list().back().shape + 1;
+    return storage()[base_count() - 1].shape + 1;
 }
 
 int first_piece_of_shape(int shape)
 {
     const std::vector<Piece>& list = piece_list();
-    for (int i = 0; i < static_cast<int>(list.size()); i++) {
+    for (int i = 0; i < base_count(); i++) {
         if (list[i].shape == shape) {
             return i;
         }
@@ -139,7 +181,7 @@ uint64_t pieces_for_shapes(uint32_t shapes)
 {
     const std::vector<Piece>& list = piece_list();
     uint64_t mask = 0;
-    for (int i = 0; i < static_cast<int>(list.size()); i++) {
+    for (int i = 0; i < base_count(); i++) {
         if (shapes >> list[i].shape & 1) {
             mask |= uint64_t{1} << i;
         }
@@ -150,7 +192,7 @@ uint64_t pieces_for_shapes(uint32_t shapes)
 int find_piece(std::string_view name, int rotation)
 {
     const std::vector<Piece>& list = piece_list();
-    for (int i = 0; i < static_cast<int>(list.size()); i++) {
+    for (int i = 0; i < base_count(); i++) {
         if (list[i].name == name && list[i].rotation == rotation) {
             return i;
         }

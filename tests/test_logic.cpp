@@ -13,20 +13,22 @@ namespace {
 
 constexpr uint64_t kAnyPiece = ~uint64_t{0};
 
-GameOptions options(int size, int rescues, bool fitting)
+GameOptions options(int size, int rescues, int deal_mode)
 {
     GameOptions o;
     o.size = size;
     o.rescues = rescues;
-    o.fitting_deal = fitting;
+    o.deal_mode = deal_mode;
     return o;
 }
 
 void test_piece_list()
 {
     const std::vector<Piece>& list = piece_list();
-    assert(list.size() == 46);
-    for (const Piece& p : list) {
+    assert(base_piece_count() == 46);
+    assert(list.size() == 46 + kCustomSlots);
+    for (int i = 0; i < base_piece_count(); i++) {
+        const Piece& p = list[i];
         int min_row = 99;
         int min_col = 99;
         for (const Cell& c : p.cells) {
@@ -218,7 +220,7 @@ void test_fitting_deal()
     }
     Game game;
     game_start(game, 4, options(8, 0, true));
-    assert(game.fitting_deal);
+    assert(game.deal_mode == 1);
     for (int index : game.tray) {
         assert(fits_anywhere(game.board, piece_list()[index]));
     }
@@ -253,6 +255,80 @@ void test_piece_filter()
     }
     int first = first_piece_of_shape(piece_list()[find_piece("tee", 0)].shape);
     assert(first == find_piece("tee", 0));
+}
+
+void test_dynamic_deal()
+{
+    std::mt19937 rng(31);
+    Board empty;
+    int counts[46] = {};
+    for (int i = 0; i < 3000; i++) {
+        for (int index : deal_dynamic(rng, empty, kAnyPiece)) {
+            counts[index]++;
+        }
+    }
+    for (int count : counts) {
+        assert(count > 120 && count < 280);
+    }
+    Board sparse = sparse_board();
+    int allowed[3] = {find_piece("dot", 0), find_piece("diag2", 0), find_piece("diag3", 0)};
+    for (int i = 0; i < 500; i++) {
+        for (int index : deal_dynamic(rng, sparse, kAnyPiece)) {
+            assert(index == allowed[0] || index == allowed[1] || index == allowed[2]);
+        }
+    }
+    Board packed;
+    for (int r = 0; r < kBoardSize; r++) {
+        for (int c = 0; c < kBoardSize; c++) {
+            packed.cell[r][c] = 1;
+        }
+        packed.cell[r][(r * 3) % 8] = 0;
+    }
+    int dot = find_piece("dot", 0);
+    for (int i = 0; i < 200; i++) {
+        for (int index : deal_dynamic(rng, packed, kAnyPiece)) {
+            assert(index == dot);
+        }
+    }
+    Board half;
+    for (int r = 0; r < 6; r++) {
+        for (int c = 0; c < 7; c++) {
+            half.cell[r][c] = 1;
+        }
+    }
+    int invented = 0;
+    for (int i = 0; i < 400; i++) {
+        Tray tray = deal_dynamic(rng, half, kAnyPiece);
+        for (int index : tray) {
+            if (index >= base_piece_count()) {
+                invented++;
+                const Piece& p = piece_list()[index];
+                assert(fits_anywhere(half, p));
+                assert(p.cells.size() >= 2 && p.cells.size() <= 6);
+                assert(p.rows <= 4 && p.cols <= 4);
+                for (int k = 0; k < base_piece_count(); k++) {
+                    const Piece& base = piece_list()[k];
+                    bool same = base.cells.size() == p.cells.size() && base.rows == p.rows && base.cols == p.cols;
+                    for (size_t j = 0; same && j < p.cells.size(); j++) {
+                        same = base.cells[j].row == p.cells[j].row && base.cells[j].col == p.cells[j].col;
+                    }
+                    assert(!same);
+                }
+            } else {
+                assert(index >= 0);
+            }
+        }
+    }
+    std::printf("dynamic deal: %d of 1200 pieces are invented shapes\n", invented);
+    assert(invented > 400);
+    GameOptions only_dots;
+    only_dots.allowed = pieces_for_shapes(1u << piece_list()[find_piece("dot", 0)].shape);
+    only_dots.deal_mode = 2;
+    Game game;
+    game_start(game, 8, only_dots);
+    for (int index : game.tray) {
+        assert(index == find_piece("dot", 0));
+    }
 }
 
 void test_tray_refill()
@@ -326,6 +402,7 @@ int main()
     test_rescue();
     test_fitting_deal();
     test_piece_filter();
+    test_dynamic_deal();
     test_tray_refill();
     test_deal_fairness();
     test_score_and_streak();

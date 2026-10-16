@@ -30,7 +30,11 @@ struct Piece {
     std::vector<Cell> cells;
 };
 
+constexpr int kCustomSlots = 12;
+
 const std::vector<Piece>& piece_list();
+int base_piece_count();
+int register_custom_piece(const std::vector<Cell>& cells, int glaze);
 int find_piece(std::string_view name, int rotation);
 int shape_count();
 int first_piece_of_shape(int shape);
