@@ -61,6 +61,20 @@ void gfx_destroy(Gfx& g)
     g.vignette = nullptr;
 }
 
+void gfx_reset(Gfx& g)
+{
+    for (auto& [key, s] : g.sprites) {
+        SDL_DestroyTexture(s.tex);
+    }
+    for (auto& [key, t] : g.texts) {
+        SDL_DestroyTexture(t.tex);
+    }
+    g.sprites.clear();
+    g.texts.clear();
+    SDL_DestroyTexture(g.vignette);
+    g.vignette = bake_vignette(g.renderer);
+}
+
 void gfx_begin_frame(Gfx& g)
 {
     g.frame++;

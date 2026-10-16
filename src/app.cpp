@@ -196,25 +196,26 @@ int pause_hit(float x, float y)
 int settings_hit(float x, float y)
 {
     SettingsLayout l = settings_layout();
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < l.count; i++) {
         if (inside(l.option[i], x, y)) {
             return i;
         }
     }
-    return inside(l.back, x, y) ? 4 : -1;
+    return inside(l.back, x, y) ? kSettingsBack : -1;
 }
 
 void settings_activate(App& app, int hit)
 {
     bool was_armed = app.reset_armed;
     app.reset_armed = false;
-    if (hit == 0) {
+    int id = hit == kSettingsBack ? -1 : settings_layout().id[hit];
+    if (id == kSettingGrid) {
         app.settings.grid = next_grid(app.settings.grid);
-    } else if (hit == 1) {
+    } else if (id == kSettingLift) {
         app.settings.lift = next_lift(app.settings.lift);
-    } else if (hit == 2) {
+    } else if (id == kSettingFullscreen) {
         toggle_fullscreen(app);
-    } else if (hit == 3) {
+    } else if (id == kSettingReset) {
         if (was_armed) {
             app.best = 0;
             app.game.score = ScoreState{};
@@ -302,8 +303,11 @@ void key_down(App& app, const SDL_KeyboardEvent& key)
     if (key.repeat) {
         return;
     }
-    if (key.key == SDLK_ESCAPE) {
-        if (app.screen == Screen::Play && !app.over_pending) {
+    bool back = key.key == SDLK_AC_BACK;
+    if (key.key == SDLK_ESCAPE || back) {
+        if (app.screen == Screen::Menu) {
+            app.quit = back;
+        } else if (app.screen == Screen::Play && !app.over_pending) {
             cancel_hand(app);
             app.view.pause_pressed = false;
             app.screen = Screen::Pause;
@@ -325,10 +329,27 @@ void key_down(App& app, const SDL_KeyboardEvent& key)
     }
 }
 
+bool SDLCALL lifecycle_watch(void* data, SDL_Event* event)
+{
+    if (event->type != SDL_EVENT_DID_ENTER_BACKGROUND && event->type != SDL_EVENT_TERMINATING) {
+        return true;
+    }
+    App& app = *static_cast<App*>(data);
+    if (app.screen == Screen::Play && !app.over_pending) {
+        cancel_hand(app);
+        app.view.pause_pressed = false;
+        app.screen = Screen::Pause;
+    }
+    commit_best(app);
+    save_settings(app.settings);
+    return true;
+}
+
 }
 
 void app_init(App& app, Gfx& g, SDL_Window* window)
 {
+    SDL_AddEventWatch(lifecycle_watch, &app);
     app.window = window;
     if (titlebar_supported()) {
         SDL_SetWindowHitTest(window, titlebar_hit_test, nullptr);
@@ -336,7 +357,7 @@ void app_init(App& app, Gfx& g, SDL_Window* window)
     apply_titlebar(app, g);
     app.best = load_best();
     app.settings = load_settings();
-    if (app.settings.fullscreen) {
+    if (app.settings.fullscreen && fullscreen_supported()) {
         SDL_SetWindowFullscreen(window, true);
     }
     app.menu.best = app.best;
@@ -351,6 +372,10 @@ void app_event(App& app, Gfx& g, SDL_Event& event)
         break;
     case SDL_EVENT_KEY_DOWN:
         key_down(app, event.key);
+        break;
+    case SDL_EVENT_RENDER_DEVICE_RESET:
+    case SDL_EVENT_RENDER_TARGETS_RESET:
+        gfx_reset(g);
         break;
     case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
     case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:

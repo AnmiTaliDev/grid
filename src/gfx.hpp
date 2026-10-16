@@ -59,6 +59,7 @@ struct Gfx {
 
 bool gfx_init(Gfx& g, SDL_Renderer* renderer, const std::string& font_path);
 void gfx_destroy(Gfx& g);
+void gfx_reset(Gfx& g);
 void gfx_begin_frame(Gfx& g);
 
 Sprite sprite_from_canvas(Gfx& g, const Canvas& canvas);
