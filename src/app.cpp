@@ -7,6 +7,7 @@
 #include "draw.hpp"
 #include "drop.hpp"
 #include "layout.hpp"
+#include "piece.hpp"
 #include "settings.hpp"
 #include "storage.hpp"
 #include "titlebar.hpp"
@@ -49,8 +50,12 @@ void commit_best(App& app)
 
 void start_game(App& app)
 {
-    game_start(app.game, static_cast<uint32_t>(SDL_GetTicksNS()), app.settings.grid, app.settings.rescues,
-               app.settings.deal == 1);
+    GameOptions options;
+    options.size = app.settings.grid;
+    options.rescues = app.settings.rescues;
+    options.fitting_deal = app.settings.deal == 1;
+    options.allowed = pieces_for_shapes(app.settings.shapes);
+    game_start(app.game, static_cast<uint32_t>(SDL_GetTicksNS()), options);
     app.previous_best = app.best;
     app.view = GameView{};
     app.over_pending = false;
@@ -226,6 +231,9 @@ void settings_activate(App& app, int hit)
         app.settings.grid = next_grid(app.settings.grid);
     } else if (id == kSettingLift) {
         app.settings.lift = next_lift(app.settings.lift);
+    } else if (id == kSettingPieces) {
+        app.panel_pressed = -1;
+        app.screen = Screen::Pieces;
     } else if (id == kSettingDeal) {
         app.settings.deal = next_deal(app.settings.deal);
     } else if (id == kSettingRescues) {
@@ -246,6 +254,31 @@ void settings_activate(App& app, int hit)
     save_settings(app.settings);
 }
 
+int pieces_hit(float x, float y)
+{
+    PiecesLayout l = pieces_layout();
+    for (int i = 0; i < l.count; i++) {
+        if (inside(l.card[i], x, y)) {
+            return i;
+        }
+    }
+    return inside(l.back, x, y) ? l.count : -1;
+}
+
+void pieces_activate(App& app, int hit)
+{
+    PiecesLayout l = pieces_layout();
+    if (hit == l.count) {
+        app.screen = Screen::Settings;
+        return;
+    }
+    uint32_t next = app.settings.shapes ^ (uint32_t{1} << hit);
+    if (next != 0) {
+        app.settings.shapes = next;
+        save_settings(app.settings);
+    }
+}
+
 void pointer_down(App& app, Gfx& g, float x, float y)
 {
     if (app.screen == Screen::Menu) {
@@ -257,6 +290,8 @@ void pointer_down(App& app, Gfx& g, float x, float y)
         app.panel_pressed = pause_hit(x, y);
     } else if (app.screen == Screen::Settings) {
         app.panel_pressed = settings_hit(x, y);
+    } else if (app.screen == Screen::Pieces) {
+        app.panel_pressed = pieces_hit(x, y);
     } else {
         bool chip = app.game.score.score > app.previous_best;
         app.panel_pressed = over_hit(g, x, y, chip, app.game.rescues_left > 0);
@@ -292,6 +327,13 @@ void pointer_up(App& app, Gfx& g, float x, float y)
             } else {
                 go_menu(app);
             }
+        }
+    } else if (app.screen == Screen::Pieces) {
+        int hit = pieces_hit(x, y);
+        int pressed = app.panel_pressed;
+        app.panel_pressed = -1;
+        if (hit >= 0 && hit == pressed) {
+            pieces_activate(app, hit);
         }
     } else if (app.screen == Screen::Settings) {
         int hit = settings_hit(x, y);
@@ -332,6 +374,8 @@ void key_down(App& app, const SDL_KeyboardEvent& key)
             app.screen = Screen::Pause;
         } else if (app.screen == Screen::Pause) {
             app.screen = Screen::Play;
+        } else if (app.screen == Screen::Pieces) {
+            app.screen = Screen::Settings;
         } else if (app.screen == Screen::Over || app.screen == Screen::Settings) {
             go_menu(app);
         }
@@ -498,12 +542,19 @@ void app_draw(App& app, Gfx& g)
         pv.score = app.game.score.score;
         pv.pressed = app.panel_pressed;
         draw_pause(g, pv);
+    } else if (app.screen == Screen::Pieces) {
+        PiecesView pv;
+        pv.shapes = app.settings.shapes;
+        pv.pressed = app.panel_pressed;
+        draw_pieces(g, pv);
     } else if (app.screen == Screen::Settings) {
         SettingsView sv;
         sv.grid = app.settings.grid;
         sv.lift = app.settings.lift;
         sv.rescues = app.settings.rescues;
         sv.deal = app.settings.deal;
+        sv.shapes_on = __builtin_popcount(app.settings.shapes);
+        sv.shapes_total = shape_count();
         sv.fullscreen = app.settings.fullscreen;
         sv.reset_armed = app.reset_armed;
         sv.pressed = app.panel_pressed;

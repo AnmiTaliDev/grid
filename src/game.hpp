@@ -9,6 +9,13 @@
 #include "deal.hpp"
 #include "score.hpp"
 
+struct GameOptions {
+    int size = 8;
+    int rescues = 0;
+    bool fitting_deal = false;
+    uint64_t allowed = ~uint64_t{0};
+};
+
 struct Game {
     Board board;
     Tray tray{-1, -1, -1};
@@ -16,6 +23,7 @@ struct Game {
     bool over = false;
     int rescues_left = 0;
     bool fitting_deal = false;
+    uint64_t allowed = ~uint64_t{0};
     std::mt19937 rng;
 };
 
@@ -26,6 +34,6 @@ struct MoveResult {
     uint64_t cleared = 0;
 };
 
-void game_start(Game& game, uint32_t seed, int size, int rescues, bool fitting_deal);
+void game_start(Game& game, uint32_t seed, const GameOptions& options);
 bool game_rescue(Game& game);
 MoveResult game_place(Game& game, int slot, int row, int col);

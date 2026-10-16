@@ -58,8 +58,15 @@ struct SettingsView {
     int lift = 100;
     int rescues = 1;
     int deal = 0;
+    int shapes_on = 0;
+    int shapes_total = 0;
     bool fullscreen = false;
     bool reset_armed = false;
+    int pressed = -1;
+};
+
+struct PiecesView {
+    uint32_t shapes = 0;
     int pressed = -1;
 };
 

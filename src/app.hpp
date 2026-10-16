@@ -14,6 +14,7 @@ enum class Screen {
     Play,
     Pause,
     Settings,
+    Pieces,
     Over,
 };
 

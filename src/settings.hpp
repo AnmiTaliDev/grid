@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #pragma once
 
+#include <cstdint>
+
 constexpr int kGridSizes[] = {6, 7, 8};
 constexpr int kHandLifts[] = {0, 60, 100};
 constexpr int kRescueCounts[] = {0, 1, 2, 3};
@@ -12,16 +14,18 @@ enum SettingId {
     kSettingFullscreen,
     kSettingRescues,
     kSettingDeal,
+    kSettingPieces,
     kSettingReset,
 };
 
-constexpr int kSettingsBack = 4;
+constexpr int kSettingsBack = 99;
 
 struct Settings {
     int grid = 8;
     int lift = 100;
     int rescues = 1;
     int deal = 0;
+    uint32_t shapes = 0;
     bool fullscreen = false;
 };
 

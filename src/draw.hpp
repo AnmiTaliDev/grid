@@ -29,12 +29,24 @@ struct SettingsLayout {
     Rect panel;
     float title_top;
     int count;
-    int id[6];
-    Rect option[6];
+    int id[7];
+    Rect option[7];
+    Rect back;
+};
+
+constexpr int kMaxShapes = 32;
+
+struct PiecesLayout {
+    Rect panel;
+    float title_top;
+    int count;
+    Rect card[kMaxShapes];
     Rect back;
 };
 
 ButtonSpec menu_button(int which);
+PiecesLayout pieces_layout();
+ButtonSpec pieces_back_button(const PiecesLayout& l);
 SettingsLayout settings_layout();
 std::string settings_label(const SettingsView& v, int id);
 ButtonSpec settings_option_button(const SettingsLayout& l, const SettingsView& v, int index);
@@ -51,6 +63,7 @@ void draw_header_score(Gfx& g, int score, float alpha);
 void draw_backdrop(Gfx& g);
 void draw_menu(Gfx& g, const MenuView& v);
 void draw_settings(Gfx& g, const SettingsView& v);
+void draw_pieces(Gfx& g, const PiecesView& v);
 void draw_game(Gfx& g, const GameView& v);
 void draw_game_over(Gfx& g, const OverView& v);
 void draw_pause(Gfx& g, const PauseView& v);

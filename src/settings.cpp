@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include "settings.hpp"
 
+#include "piece.hpp"
+
 #include <SDL3/SDL.h>
 
 #include <cstdio>
@@ -76,6 +78,7 @@ int next_deal(int deal)
 Settings load_settings()
 {
     Settings s;
+    s.shapes = all_shapes();
     std::string path = settings_path();
     if (path.empty()) {
         return s;
@@ -92,13 +95,16 @@ Settings load_settings()
     int full = 0;
     int rescues = s.rescues;
     int deal = s.deal;
-    std::sscanf(text.c_str(), "grid %d lift %d fullscreen %d rescues %d deal %d", &grid, &lift, &full, &rescues,
-                &deal);
+    unsigned shapes = s.shapes;
+    std::sscanf(text.c_str(), "grid %d lift %d fullscreen %d rescues %d deal %d shapes %u", &grid, &lift, &full,
+                &rescues, &deal, &shapes);
     s.grid = allowed(kGridSizes, grid) ? grid : s.grid;
     s.lift = allowed(kHandLifts, lift) ? lift : s.lift;
     s.fullscreen = full != 0;
     s.rescues = allowed(kRescueCounts, rescues) ? rescues : s.rescues;
     s.deal = deal == 1 ? 1 : 0;
+    shapes &= all_shapes();
+    s.shapes = shapes != 0 ? shapes : s.shapes;
     return s;
 }
 
@@ -110,7 +116,7 @@ void save_settings(const Settings& settings)
     }
     std::string text = "grid " + std::to_string(settings.grid) + " lift " + std::to_string(settings.lift) +
                        " fullscreen " + (settings.fullscreen ? "1" : "0") + " rescues " + std::to_string(settings.rescues) +
-                       " deal " + std::to_string(settings.deal) + "\n";
+                       " deal " + std::to_string(settings.deal) + " shapes " + std::to_string(settings.shapes) + "\n";
     if (!SDL_SaveFile(path.c_str(), text.data(), text.size())) {
         SDL_Log("Cannot save settings: %s", SDL_GetError());
     }

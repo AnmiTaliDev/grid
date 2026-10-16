@@ -50,6 +50,7 @@ add_library(grid_render STATIC
     src/draw_game.cpp
     src/draw_over.cpp
     src/draw_settings.cpp
+    src/draw_pieces.cpp
     src/settings.cpp
 )
 target_link_libraries(grid_render PUBLIC grid_logic SDL3::SDL3 SDL3_ttf::SDL3_ttf)

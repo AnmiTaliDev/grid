@@ -11,6 +11,17 @@
 
 namespace {
 
+constexpr uint64_t kAnyPiece = ~uint64_t{0};
+
+GameOptions options(int size, int rescues, bool fitting)
+{
+    GameOptions o;
+    o.size = size;
+    o.rescues = rescues;
+    o.fitting_deal = fitting;
+    return o;
+}
+
 void test_piece_list()
 {
     const std::vector<Piece>& list = piece_list();
@@ -65,7 +76,7 @@ void test_placement_validity()
 void test_simultaneous_clear()
 {
     Game game;
-    game_start(game, 1, 8, 1, false);
+    game_start(game, 1, options(8, 1, false));
     int dot = find_piece("dot", 0);
     game.tray = {dot, dot, dot};
     for (int i = 1; i < kBoardSize; i++) {
@@ -85,7 +96,7 @@ void test_simultaneous_clear()
 void test_smaller_grid()
 {
     Game game;
-    game_start(game, 3, 6, 1, false);
+    game_start(game, 3, options(6, 1, false));
     assert(game.board.size == 6);
     const Piece& bar3 = piece_list()[find_piece("bar3", 0)];
     assert(can_place(game.board, bar3, 0, 3));
@@ -138,7 +149,7 @@ void test_game_over()
     assert(any_piece_fits(board, {bar2, dot, -1}));
     assert(!any_piece_fits(board, {bar2, bar2, -1}));
     Game game;
-    game_start(game, 1, 8, 1, false);
+    game_start(game, 1, options(8, 1, false));
     game.board = board;
     game.tray = {dot, bar2, bar2};
     game.over = false;
@@ -173,7 +184,7 @@ void test_rescue()
         assert(std::find(rescue.begin(), rescue.end(), dot) != rescue.end());
     }
     Game game;
-    game_start(game, 9, 8, 1, false);
+    game_start(game, 9, options(8, 1, false));
     game.board = board;
     game.tray = {bar2, bar2, bar2};
     game.over = true;
@@ -182,7 +193,7 @@ void test_rescue()
     assert(any_piece_fits(game.board, game.tray));
     game.over = true;
     assert(!game_rescue(game));
-    game_start(game, 9, 8, 0, false);
+    game_start(game, 9, options(8, 0, false));
     game.over = true;
     assert(!game_rescue(game));
 }
@@ -193,30 +204,61 @@ void test_fitting_deal()
     int allowed[3] = {find_piece("dot", 0), find_piece("diag2", 0), find_piece("diag3", 0)};
     std::mt19937 rng(21);
     for (int i = 0; i < 500; i++) {
-        Tray t = deal_fitting(rng, sparse);
+        Tray t = deal_fitting(rng, sparse, kAnyPiece);
         for (int index : t) {
             assert(index == allowed[0] || index == allowed[1] || index == allowed[2]);
         }
     }
     Board empty;
     for (int i = 0; i < 200; i++) {
-        Tray t = deal_fitting(rng, empty);
+        Tray t = deal_fitting(rng, empty, kAnyPiece);
         for (int index : t) {
             assert(fits_anywhere(empty, piece_list()[index]));
         }
     }
     Game game;
-    game_start(game, 4, 8, 0, true);
+    game_start(game, 4, options(8, 0, true));
     assert(game.fitting_deal);
     for (int index : game.tray) {
         assert(fits_anywhere(game.board, piece_list()[index]));
     }
 }
 
+void test_piece_filter()
+{
+    assert(shape_count() == 18);
+    assert(all_shapes() == (1u << 18) - 1);
+    assert(pieces_for_shapes(all_shapes()) == (uint64_t{1} << 46) - 1);
+    uint32_t only_dot = 1u << piece_list()[find_piece("dot", 0)].shape;
+    uint64_t allowed = pieces_for_shapes(only_dot);
+    assert(allowed == uint64_t{1} << find_piece("dot", 0));
+    uint32_t bars = (1u << piece_list()[find_piece("bar2", 0)].shape) | (1u << piece_list()[find_piece("bar3", 0)].shape);
+    assert(__builtin_popcountll(pieces_for_shapes(bars)) == 4);
+    Board empty;
+    std::mt19937 rng(77);
+    for (int i = 0; i < 300; i++) {
+        for (int index : deal_tray(rng, empty, allowed)) {
+            assert(index == find_piece("dot", 0));
+        }
+        for (int index : deal_fitting(rng, empty, pieces_for_shapes(bars))) {
+            assert(piece_list()[index].name == "bar2" || piece_list()[index].name == "bar3");
+        }
+    }
+    GameOptions o;
+    o.allowed = allowed;
+    Game game;
+    game_start(game, 5, o);
+    for (int index : game.tray) {
+        assert(index == find_piece("dot", 0));
+    }
+    int first = first_piece_of_shape(piece_list()[find_piece("tee", 0)].shape);
+    assert(first == find_piece("tee", 0));
+}
+
 void test_tray_refill()
 {
     Game game;
-    game_start(game, 7, 8, 1, false);
+    game_start(game, 7, options(8, 1, false));
     int dot = find_piece("dot", 0);
     game.tray = {dot, -1, -1};
     MoveResult r = game_place(game, 0, 0, 0);
@@ -232,7 +274,7 @@ void test_deal_fairness()
     Board empty;
     int counts[46] = {};
     for (int i = 0; i < 3000; i++) {
-        Tray t = deal_tray(rng, empty);
+        Tray t = deal_tray(rng, empty, kAnyPiece);
         for (int index : t) {
             counts[index]++;
         }
@@ -244,7 +286,7 @@ void test_deal_fairness()
     int fitting = 0;
     const int deals = 3000;
     for (int i = 0; i < deals; i++) {
-        Tray t = deal_tray(rng, sparse);
+        Tray t = deal_tray(rng, sparse, kAnyPiece);
         if (any_piece_fits(sparse, t)) {
             fitting++;
         }
@@ -283,6 +325,7 @@ int main()
     test_game_over();
     test_rescue();
     test_fitting_deal();
+    test_piece_filter();
     test_tray_refill();
     test_deal_fairness();
     test_score_and_streak();

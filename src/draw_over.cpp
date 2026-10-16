@@ -158,6 +158,10 @@ bool warm_step(Gfx& g, int step)
         panel_sprite(g, over_layout(g, index % 2 == 0, index >= 2).panel.h);
     } else if (index == 4) {
         panel_sprite(g, pause_layout().panel.h);
+    } else if (index == 5) {
+        panel_sprite(g, pieces_layout().panel.h);
+    } else if (index == 6) {
+        panel_sprite(g, settings_layout().panel.h);
     } else {
         return false;
     }

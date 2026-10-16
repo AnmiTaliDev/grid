@@ -43,7 +43,10 @@ const Sprite& store(Gfx& g, const SpriteKey& key, const Canvas& canvas)
 
 float tile_radius(float size)
 {
-    return size >= 54.0f ? 10.0f : 8.0f;
+    if (size >= 54.0f) {
+        return 10.0f;
+    }
+    return size >= 28.0f ? 8.0f : size * 0.28f;
 }
 
 void paint_glint(Canvas& c, float x, float y, float s, Color color)
@@ -67,8 +70,9 @@ const Sprite& tile_sprite(Gfx& g, float size, int glaze, bool dim)
         return *s;
     }
     float r = tile_radius(size);
-    Canvas c = make_canvas(size, size + 3, 1);
-    fill_rr(c, {0, 3, size, size}, r, dc(palette::kGlazeEdge[glaze], dim));
+    float e = size >= 28.0f ? 3.0f : 2.0f;
+    Canvas c = make_canvas(size, size + e, 1);
+    fill_rr(c, {0, e, size, size}, r, dc(palette::kGlazeEdge[glaze], dim));
     fill_rr(c, {0, 0, size, size}, r, dc(palette::kGlazeFace[glaze], dim));
     paint_glint(c, 0, 0, size, dc(with_alpha(rgb(0xFFFFFF), 0.55f), dim));
     return store(g, key, c);

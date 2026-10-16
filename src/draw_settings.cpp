@@ -12,6 +12,8 @@ constexpr float kTitleLine = 30.8f;
 
 }
 
+static_assert(kSettingsBack > 7, "Back index must not collide with option indices");
+
 SettingsLayout settings_layout()
 {
     SettingsLayout l;
@@ -22,6 +24,7 @@ SettingsLayout settings_layout()
         l.id[l.count++] = kSettingFullscreen;
     }
     l.id[l.count++] = kSettingDeal;
+    l.id[l.count++] = kSettingPieces;
     l.id[l.count++] = kSettingRescues;
     l.id[l.count++] = kSettingReset;
     float n = static_cast<float>(l.count);
@@ -45,6 +48,9 @@ std::string settings_label(const SettingsView& v, int id)
     }
     if (id == kSettingLift) {
         return v.lift == 0 ? "Piece lift: none" : "Piece lift: " + std::to_string(v.lift) + " px";
+    }
+    if (id == kSettingPieces) {
+        return "Pieces: " + std::to_string(v.shapes_on) + "/" + std::to_string(v.shapes_total);
     }
     if (id == kSettingDeal) {
         return v.deal == 0 ? "Deal: random" : "Deal: fitting";

@@ -110,17 +110,17 @@ Tray rescue_tray(std::mt19937& rng, const Board& board)
     return tray;
 }
 
-Tray deal_fitting(std::mt19937& rng, const Board& board)
+Tray deal_fitting(std::mt19937& rng, const Board& board, uint64_t allowed)
 {
     const std::vector<Piece>& list = piece_list();
     std::vector<int> fitting;
     for (int i = 0; i < static_cast<int>(list.size()); i++) {
-        if (fits_anywhere(board, list[i])) {
+        if ((allowed >> i & 1) && fits_anywhere(board, list[i])) {
             fitting.push_back(i);
         }
     }
     if (fitting.empty()) {
-        return deal_tray(rng, board);
+        return deal_tray(rng, board, allowed);
     }
     Tray tray{};
     for (int& slot : tray) {
@@ -129,13 +129,19 @@ Tray deal_fitting(std::mt19937& rng, const Board& board)
     return tray;
 }
 
-Tray deal_tray(std::mt19937& rng, const Board& board)
+Tray deal_tray(std::mt19937& rng, const Board& board, uint64_t allowed)
 {
-    std::uniform_int_distribution<int> pick(0, static_cast<int>(piece_list().size()) - 1);
+    std::vector<int> pool;
+    for (int i = 0; i < static_cast<int>(piece_list().size()); i++) {
+        if (allowed >> i & 1) {
+            pool.push_back(i);
+        }
+    }
+    std::uniform_int_distribution<int> pick(0, static_cast<int>(pool.size()) - 1);
     Tray tray{};
     for (int attempt = 0; attempt < kDealTries; attempt++) {
         for (int& slot : tray) {
-            slot = pick(rng);
+            slot = pool[static_cast<size_t>(pick(rng))];
         }
         if (any_piece_fits(board, tray)) {
             return tray;

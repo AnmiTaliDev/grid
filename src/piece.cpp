@@ -80,7 +80,9 @@ bool same_cells(const std::vector<Cell>& a, const std::vector<Cell>& b)
 std::vector<Piece> build_list()
 {
     std::vector<Piece> list;
+    int shape_index = -1;
     for (const BaseShape& shape : base_shapes()) {
+        shape_index++;
         std::vector<std::vector<Cell>> seen;
         std::vector<Cell> cells = normalize(shape.cells);
         for (int i = 0; i < 4; i++) {
@@ -96,7 +98,7 @@ std::vector<Piece> build_list()
                     rows = std::max(rows, c.row + 1);
                     cols = std::max(cols, c.col + 1);
                 }
-                list.push_back({shape.name, static_cast<int>(seen.size()) - 1, shape.glaze, rows, cols, cells});
+                list.push_back({shape.name, shape_index, static_cast<int>(seen.size()) - 1, shape.glaze, rows, cols, cells});
             }
             cells = rotate(cells);
         }
@@ -110,6 +112,39 @@ const std::vector<Piece>& piece_list()
 {
     static const std::vector<Piece> list = build_list();
     return list;
+}
+
+int shape_count()
+{
+    return piece_list().back().shape + 1;
+}
+
+int first_piece_of_shape(int shape)
+{
+    const std::vector<Piece>& list = piece_list();
+    for (int i = 0; i < static_cast<int>(list.size()); i++) {
+        if (list[i].shape == shape) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+uint32_t all_shapes()
+{
+    return (uint32_t{1} << shape_count()) - 1;
+}
+
+uint64_t pieces_for_shapes(uint32_t shapes)
+{
+    const std::vector<Piece>& list = piece_list();
+    uint64_t mask = 0;
+    for (int i = 0; i < static_cast<int>(list.size()); i++) {
+        if (shapes >> list[i].shape & 1) {
+            mask |= uint64_t{1} << i;
+        }
+    }
+    return mask;
 }
 
 int find_piece(std::string_view name, int rotation)

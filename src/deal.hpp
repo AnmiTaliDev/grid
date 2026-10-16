@@ -3,6 +3,7 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 #include <random>
 
 #include "board.hpp"
@@ -12,7 +13,7 @@ constexpr int kDealTries = 20;
 
 using Tray = std::array<int, kTraySize>;
 
-Tray deal_tray(std::mt19937& rng, const Board& board);
-Tray deal_fitting(std::mt19937& rng, const Board& board);
+Tray deal_tray(std::mt19937& rng, const Board& board, uint64_t allowed);
+Tray deal_fitting(std::mt19937& rng, const Board& board, uint64_t allowed);
 Tray rescue_tray(std::mt19937& rng, const Board& board);
 bool any_piece_fits(const Board& board, const Tray& tray);

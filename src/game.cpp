@@ -6,17 +6,19 @@ namespace {
 
 Tray next_tray(Game& game)
 {
-    return game.fitting_deal ? deal_fitting(game.rng, game.board) : deal_tray(game.rng, game.board);
+    return game.fitting_deal ? deal_fitting(game.rng, game.board, game.allowed)
+                             : deal_tray(game.rng, game.board, game.allowed);
 }
 
 }
 
-void game_start(Game& game, uint32_t seed, int size, int rescues, bool fitting_deal)
+void game_start(Game& game, uint32_t seed, const GameOptions& options)
 {
-    game.rescues_left = rescues;
-    game.fitting_deal = fitting_deal;
+    game.rescues_left = options.rescues;
+    game.fitting_deal = options.fitting_deal;
+    game.allowed = options.allowed;
     game.board = Board{};
-    game.board.size = size;
+    game.board.size = options.size;
     game.score = ScoreState{};
     game.over = false;
     game.rng.seed(seed);
