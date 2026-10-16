@@ -49,12 +49,14 @@ struct OverView {
     int score = 0;
     int previous_best = 0;
     bool new_best = false;
+    int rescues_left = 0;
     int pressed = -1;
 };
 
 struct SettingsView {
     int grid = 8;
     int lift = 100;
+    int rescues = 1;
     bool fullscreen = false;
     bool reset_armed = false;
     int pressed = -1;

@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include "game.hpp"
 
-void game_start(Game& game, uint32_t seed, int size)
+void game_start(Game& game, uint32_t seed, int size, int rescues)
 {
+    game.rescues_left = rescues;
     game.board = Board{};
     game.board.size = size;
     game.score = ScoreState{};
@@ -11,6 +12,20 @@ void game_start(Game& game, uint32_t seed, int size)
     game.rng.seed(seed);
     game.tray = deal_tray(game.rng, game.board);
     game.over = !any_piece_fits(game.board, game.tray);
+}
+
+bool game_rescue(Game& game)
+{
+    if (!game.over || game.rescues_left <= 0) {
+        return false;
+    }
+    game.tray = rescue_tray(game.rng, game.board);
+    if (!any_piece_fits(game.board, game.tray)) {
+        return false;
+    }
+    game.rescues_left--;
+    game.over = false;
+    return true;
 }
 
 MoveResult game_place(Game& game, int slot, int row, int col)

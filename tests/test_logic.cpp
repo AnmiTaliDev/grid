@@ -3,6 +3,8 @@
 #undef NDEBUG
 #include <cassert>
 #include <cstdio>
+#include <algorithm>
+#include <algorithm>
 #include <set>
 
 #include "game.hpp"
@@ -51,7 +53,7 @@ void test_placement_validity()
 void test_simultaneous_clear()
 {
     Game game;
-    game_start(game, 1, 8);
+    game_start(game, 1, 8, 1);
     int dot = find_piece("dot", 0);
     game.tray = {dot, dot, dot};
     for (int i = 1; i < kBoardSize; i++) {
@@ -71,7 +73,7 @@ void test_simultaneous_clear()
 void test_smaller_grid()
 {
     Game game;
-    game_start(game, 3, 6);
+    game_start(game, 3, 6, 1);
     assert(game.board.size == 6);
     const Piece& bar3 = piece_list()[find_piece("bar3", 0)];
     assert(can_place(game.board, bar3, 0, 3));
@@ -124,7 +126,7 @@ void test_game_over()
     assert(any_piece_fits(board, {bar2, dot, -1}));
     assert(!any_piece_fits(board, {bar2, bar2, -1}));
     Game game;
-    game_start(game, 1, 8);
+    game_start(game, 1, 8, 1);
     game.board = board;
     game.tray = {dot, bar2, bar2};
     game.over = false;
@@ -135,10 +137,48 @@ void test_game_over()
     assert(!again.ok);
 }
 
+void test_rescue()
+{
+    Board board;
+    for (int r = 0; r < kBoardSize; r++) {
+        for (int c = 0; c < kBoardSize; c++) {
+            board.cell[r][c] = 1;
+        }
+    }
+    board.cell[0][0] = 0;
+    board.cell[1][0] = 0;
+    board.cell[4][4] = 0;
+    board.cell[7][7] = 0;
+    int vertical = find_piece("bar2", 1);
+    int dot = find_piece("dot", 0);
+    int bar2 = find_piece("bar2", 0);
+    assert(!any_piece_fits(board, {bar2, bar2, bar2}));
+    std::mt19937 rng(5);
+    for (int i = 0; i < 50; i++) {
+        Tray rescue = rescue_tray(rng, board);
+        assert(any_piece_fits(board, rescue));
+        assert(std::find(rescue.begin(), rescue.end(), vertical) != rescue.end());
+        assert(std::find(rescue.begin(), rescue.end(), dot) != rescue.end());
+    }
+    Game game;
+    game_start(game, 9, 8, 1);
+    game.board = board;
+    game.tray = {bar2, bar2, bar2};
+    game.over = true;
+    assert(game_rescue(game));
+    assert(!game.over && game.rescues_left == 0);
+    assert(any_piece_fits(game.board, game.tray));
+    game.over = true;
+    assert(!game_rescue(game));
+    game_start(game, 9, 8, 0);
+    game.over = true;
+    assert(!game_rescue(game));
+}
+
 void test_tray_refill()
 {
     Game game;
-    game_start(game, 7, 8);
+    game_start(game, 7, 8, 1);
     int dot = find_piece("dot", 0);
     game.tray = {dot, -1, -1};
     MoveResult r = game_place(game, 0, 0, 0);
@@ -203,6 +243,7 @@ int main()
     test_smaller_grid();
     test_row_only_and_untouched();
     test_game_over();
+    test_rescue();
     test_tray_refill();
     test_deal_fairness();
     test_score_and_streak();

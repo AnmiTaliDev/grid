@@ -48,7 +48,7 @@ ButtonSpec secondary_button(Rect box, const char* label)
 
 }
 
-OverLayout over_layout(Gfx& g, bool chip)
+OverLayout over_layout(Gfx& g, bool chip, bool rescue)
 {
     float n = normal_line_height(g, kChipStyle);
     OverLayout l;
@@ -63,6 +63,10 @@ OverLayout over_layout(Gfx& g, bool chip)
     }
     l.line_top = cursor;
     float again_top = l.line_top + n + 28;
+    l.rescue = {kContentX, again_top, kContentW, 64};
+    if (rescue) {
+        again_top += 64 + 14;
+    }
     l.again = {kContentX, again_top, kContentW, 64};
     l.menu = {kContentX, again_top + 64 + 14, kContentW, 56};
     l.panel = {kPanelX, 250, kPanelW, l.menu.y + 56 + 36 - 250};
@@ -79,6 +83,12 @@ PauseLayout pause_layout()
     l.resume = {kContentX, l.title_top + kTitleLine + 28, kContentW, 64};
     l.menu = {kContentX, l.resume.y + 64 + 14, kContentW, 56};
     return l;
+}
+
+ButtonSpec over_rescue_button(const OverLayout& l, int left)
+{
+    return {l.rescue, 16, 4, palette::kSaffronFace, palette::kSaffronEdge,
+            "Rescue (" + std::to_string(left) + " left)", {24, 800}, palette::kInk};
 }
 
 ButtonSpec over_again_button(const OverLayout& l)
@@ -104,7 +114,7 @@ ButtonSpec pause_menu_button(const PauseLayout& l)
 void draw_game_over(Gfx& g, const OverView& v)
 {
     draw_dimmed_base(g, v.board, v.score);
-    OverLayout l = over_layout(g, v.new_best);
+    OverLayout l = over_layout(g, v.new_best, v.rescues_left > 0);
     draw_sprite(g, panel_sprite(g, l.panel.h), l.panel.x, l.panel.y);
     draw_text_in_line(g, "No moves left", kTitleStyle, kContentX, l.title_top, kTitleLine, palette::kPanelTitle);
     draw_text_in_line(g, format_number(v.score), kScoreStyle, kContentX, l.score_top, 96, palette::kInk);
@@ -117,6 +127,9 @@ void draw_game_over(Gfx& g, const OverView& v)
     std::string line = (v.new_best ? "Previous best " : "Best ") + format_number(v.previous_best);
     draw_text_in_line(g, line, kLineStyle, kContentX, l.line_top, normal_line_height(g, kLineStyle),
                       palette::kPanelText);
+    if (v.rescues_left > 0) {
+        draw_button(g, over_rescue_button(l, v.rescues_left), v.pressed == 2, false);
+    }
     draw_button(g, over_again_button(l), v.pressed == 0, false);
     draw_button(g, over_menu_button(l), v.pressed == 1, false);
 }
@@ -141,11 +154,9 @@ bool warm_step(Gfx& g, int step)
         panel++;
     }
     int index = step - panel;
-    if (index == 0) {
-        panel_sprite(g, over_layout(g, true).panel.h);
-    } else if (index == 1) {
-        panel_sprite(g, over_layout(g, false).panel.h);
-    } else if (index == 2) {
+    if (index < 4) {
+        panel_sprite(g, over_layout(g, index % 2 == 0, index >= 2).panel.h);
+    } else if (index == 4) {
         panel_sprite(g, pause_layout().panel.h);
     } else {
         return false;

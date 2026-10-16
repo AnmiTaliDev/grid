@@ -49,11 +49,20 @@ void commit_best(App& app)
 
 void start_game(App& app)
 {
-    game_start(app.game, static_cast<uint32_t>(SDL_GetTicksNS()), app.settings.grid);
+    game_start(app.game, static_cast<uint32_t>(SDL_GetTicksNS()), app.settings.grid, app.settings.rescues);
     app.previous_best = app.best;
     app.view = GameView{};
     app.over_pending = false;
     app.screen = Screen::Play;
+}
+
+void rescue_game(App& app)
+{
+    if (game_rescue(app.game)) {
+        app.view = GameView{};
+        app.over_pending = false;
+        app.screen = Screen::Play;
+    }
 }
 
 void toggle_fullscreen(App& app)
@@ -175,9 +184,12 @@ void play_up(App& app, float x, float y)
     }
 }
 
-int over_hit(Gfx& g, float x, float y, bool chip)
+int over_hit(Gfx& g, float x, float y, bool chip, bool rescue)
 {
-    OverLayout l = over_layout(g, chip);
+    OverLayout l = over_layout(g, chip, rescue);
+    if (rescue && inside(l.rescue, x, y)) {
+        return 2;
+    }
     if (inside(l.again, x, y)) {
         return 0;
     }
@@ -213,6 +225,8 @@ void settings_activate(App& app, int hit)
         app.settings.grid = next_grid(app.settings.grid);
     } else if (id == kSettingLift) {
         app.settings.lift = next_lift(app.settings.lift);
+    } else if (id == kSettingRescues) {
+        app.settings.rescues = next_rescues(app.settings.rescues);
     } else if (id == kSettingFullscreen) {
         toggle_fullscreen(app);
     } else if (id == kSettingReset) {
@@ -242,7 +256,7 @@ void pointer_down(App& app, Gfx& g, float x, float y)
         app.panel_pressed = settings_hit(x, y);
     } else {
         bool chip = app.game.score.score > app.previous_best;
-        app.panel_pressed = over_hit(g, x, y, chip);
+        app.panel_pressed = over_hit(g, x, y, chip, app.game.rescues_left > 0);
     }
 }
 
@@ -285,11 +299,13 @@ void pointer_up(App& app, Gfx& g, float x, float y)
         }
     } else {
         bool chip = app.game.score.score > app.previous_best;
-        int hit = over_hit(g, x, y, chip);
+        int hit = over_hit(g, x, y, chip, app.game.rescues_left > 0);
         int pressed = app.panel_pressed;
         app.panel_pressed = -1;
         if (hit >= 0 && hit == pressed) {
-            if (hit == 0) {
+            if (hit == 2) {
+                rescue_game(app);
+            } else if (hit == 0) {
                 start_game(app);
             } else {
                 go_menu(app);
@@ -483,6 +499,7 @@ void app_draw(App& app, Gfx& g)
         SettingsView sv;
         sv.grid = app.settings.grid;
         sv.lift = app.settings.lift;
+        sv.rescues = app.settings.rescues;
         sv.fullscreen = app.settings.fullscreen;
         sv.reset_armed = app.reset_armed;
         sv.pressed = app.panel_pressed;
@@ -493,6 +510,7 @@ void app_draw(App& app, Gfx& g)
         ov.score = app.game.score.score;
         ov.previous_best = app.previous_best;
         ov.new_best = app.game.score.score > app.previous_best;
+        ov.rescues_left = app.game.rescues_left;
         ov.pressed = app.panel_pressed;
         draw_game_over(g, ov);
     }

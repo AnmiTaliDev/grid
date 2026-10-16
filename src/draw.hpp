@@ -13,6 +13,7 @@ struct OverLayout {
     float score_top;
     Rect chip;
     float line_top;
+    Rect rescue;
     Rect again;
     Rect menu;
 };
@@ -28,8 +29,8 @@ struct SettingsLayout {
     Rect panel;
     float title_top;
     int count;
-    int id[4];
-    Rect option[4];
+    int id[5];
+    Rect option[5];
     Rect back;
 };
 
@@ -38,8 +39,9 @@ SettingsLayout settings_layout();
 std::string settings_label(const SettingsView& v, int id);
 ButtonSpec settings_option_button(const SettingsLayout& l, const SettingsView& v, int index);
 ButtonSpec settings_back_button(const SettingsLayout& l);
-OverLayout over_layout(Gfx& g, bool chip);
+OverLayout over_layout(Gfx& g, bool chip, bool rescue);
 PauseLayout pause_layout();
+ButtonSpec over_rescue_button(const OverLayout& l, int left);
 ButtonSpec over_again_button(const OverLayout& l);
 ButtonSpec over_menu_button(const OverLayout& l);
 ButtonSpec pause_resume_button(const PauseLayout& l);
