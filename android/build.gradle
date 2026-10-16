@@ -1,0 +1,5 @@
+// SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
+// SPDX-License-Identifier: GPL-3.0-only
+plugins {
+    id 'com.android.application' version '8.13.1' apply false
+}

@@ -10,8 +10,22 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-find_package(SDL3 REQUIRED CONFIG)
-find_package(SDL3_ttf REQUIRED CONFIG)
+if(ANDROID)
+    set(CMAKE_CXX_FLAGS_DEBUG "-O2 -g")
+    set(CMAKE_C_FLAGS_DEBUG "-O2 -g")
+    set(SDL_SHARED ON CACHE BOOL "" FORCE)
+    set(SDL_STATIC OFF CACHE BOOL "" FORCE)
+    set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
+    set(SDLTTF_VENDORED ON CACHE BOOL "" FORCE)
+    set(SDLTTF_PLUTOSVG OFF CACHE BOOL "" FORCE)
+    set(SDLTTF_SAMPLES OFF CACHE BOOL "" FORCE)
+    set(SDLTTF_INSTALL OFF CACHE BOOL "" FORCE)
+    add_subdirectory(${SDL3_SOURCE_DIR} SDL3 EXCLUDE_FROM_ALL)
+    add_subdirectory(${SDL3_TTF_SOURCE_DIR} SDL3_ttf EXCLUDE_FROM_ALL)
+else()
+    find_package(SDL3 REQUIRED CONFIG)
+    find_package(SDL3_ttf REQUIRED CONFIG)
+endif()
 
 add_library(grid_logic STATIC
     src/piece.cpp
@@ -40,11 +54,19 @@ add_library(grid_render STATIC
 )
 target_link_libraries(grid_render PUBLIC grid_logic SDL3::SDL3 SDL3_ttf::SDL3_ttf)
 
-add_executable(grid
+set(GRID_APP_SOURCES
     src/main.cpp
     src/app.cpp
     src/storage.cpp
 )
+
+if(ANDROID)
+    add_library(main SHARED ${GRID_APP_SOURCES})
+    target_link_libraries(main PRIVATE grid_render)
+    return()
+endif()
+
+add_executable(grid ${GRID_APP_SOURCES})
 target_link_libraries(grid PRIVATE grid_render)
 
 file(COPY ${CMAKE_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})

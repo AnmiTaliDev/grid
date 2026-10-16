@@ -1,0 +1,50 @@
+// SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
+// SPDX-License-Identifier: GPL-3.0-only
+plugins {
+    id 'com.android.application'
+}
+
+def sdlDir = findProperty('sdl3.dir') ?: System.getenv('SDL3_SOURCE_DIR')
+def ttfDir = findProperty('sdl3ttf.dir') ?: System.getenv('SDL3_TTF_SOURCE_DIR')
+if (!sdlDir || !ttfDir) {
+    throw new GradleException('Set SDL3_SOURCE_DIR and SDL3_TTF_SOURCE_DIR to the SDL3 and SDL3_ttf source trees')
+}
+def abis = (findProperty('grid.abis') ?: 'arm64-v8a,armeabi-v7a,x86_64').split(',').toList()
+
+android {
+    namespace = 'dev.anmitali.grid'
+    compileSdk = 35
+    ndkVersion = '28.2.13676358'
+
+    defaultConfig {
+        applicationId = 'dev.anmitali.grid'
+        minSdk = 21
+        targetSdk = 35
+        versionCode = 1
+        versionName = '0.1.0'
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_PLATFORM=android-21", "-DANDROID_STL=c++_static",
+                        "-DSDL3_SOURCE_DIR=${sdlDir}", "-DSDL3_TTF_SOURCE_DIR=${ttfDir}"
+                abiFilters(*abis)
+            }
+        }
+    }
+
+    sourceSets {
+        main {
+            java.srcDir "${sdlDir}/android-project/app/src/main/java"
+            assets.srcDir '../../assets'
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file('../../CMakeLists.txt')
+        }
+    }
+
+    lint {
+        abortOnError = false
+    }
+}

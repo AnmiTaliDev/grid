@@ -1,0 +1,19 @@
+// SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
+// SPDX-License-Identifier: GPL-3.0-only
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'Grid'
+include ':app'
