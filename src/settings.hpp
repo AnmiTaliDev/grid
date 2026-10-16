@@ -11,6 +11,7 @@ enum SettingId {
     kSettingLift,
     kSettingFullscreen,
     kSettingRescues,
+    kSettingDeal,
     kSettingReset,
 };
 
@@ -20,6 +21,7 @@ struct Settings {
     int grid = 8;
     int lift = 100;
     int rescues = 1;
+    int deal = 0;
     bool fullscreen = false;
 };
 
@@ -27,5 +29,6 @@ bool fullscreen_supported();
 int next_grid(int grid);
 int next_lift(int lift);
 int next_rescues(int rescues);
+int next_deal(int deal);
 Settings load_settings();
 void save_settings(const Settings& settings);

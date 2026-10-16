@@ -29,8 +29,8 @@ struct SettingsLayout {
     Rect panel;
     float title_top;
     int count;
-    int id[5];
-    Rect option[5];
+    int id[6];
+    Rect option[6];
     Rect back;
 };
 

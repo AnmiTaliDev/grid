@@ -57,6 +57,7 @@ struct SettingsView {
     int grid = 8;
     int lift = 100;
     int rescues = 1;
+    int deal = 0;
     bool fullscreen = false;
     bool reset_armed = false;
     int pressed = -1;

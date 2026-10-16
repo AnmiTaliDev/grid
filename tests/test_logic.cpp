@@ -53,7 +53,7 @@ void test_placement_validity()
 void test_simultaneous_clear()
 {
     Game game;
-    game_start(game, 1, 8, 1);
+    game_start(game, 1, 8, 1, false);
     int dot = find_piece("dot", 0);
     game.tray = {dot, dot, dot};
     for (int i = 1; i < kBoardSize; i++) {
@@ -73,7 +73,7 @@ void test_simultaneous_clear()
 void test_smaller_grid()
 {
     Game game;
-    game_start(game, 3, 6, 1);
+    game_start(game, 3, 6, 1, false);
     assert(game.board.size == 6);
     const Piece& bar3 = piece_list()[find_piece("bar3", 0)];
     assert(can_place(game.board, bar3, 0, 3));
@@ -126,7 +126,7 @@ void test_game_over()
     assert(any_piece_fits(board, {bar2, dot, -1}));
     assert(!any_piece_fits(board, {bar2, bar2, -1}));
     Game game;
-    game_start(game, 1, 8, 1);
+    game_start(game, 1, 8, 1, false);
     game.board = board;
     game.tray = {dot, bar2, bar2};
     game.over = false;
@@ -161,7 +161,7 @@ void test_rescue()
         assert(std::find(rescue.begin(), rescue.end(), dot) != rescue.end());
     }
     Game game;
-    game_start(game, 9, 8, 1);
+    game_start(game, 9, 8, 1, false);
     game.board = board;
     game.tray = {bar2, bar2, bar2};
     game.over = true;
@@ -170,15 +170,41 @@ void test_rescue()
     assert(any_piece_fits(game.board, game.tray));
     game.over = true;
     assert(!game_rescue(game));
-    game_start(game, 9, 8, 0);
+    game_start(game, 9, 8, 0, false);
     game.over = true;
     assert(!game_rescue(game));
+}
+
+void test_fitting_deal()
+{
+    Board sparse = sparse_board();
+    int dot = find_piece("dot", 0);
+    std::mt19937 rng(21);
+    for (int i = 0; i < 500; i++) {
+        Tray t = deal_fitting(rng, sparse);
+        for (int index : t) {
+            assert(index == dot);
+        }
+    }
+    Board empty;
+    for (int i = 0; i < 200; i++) {
+        Tray t = deal_fitting(rng, empty);
+        for (int index : t) {
+            assert(fits_anywhere(empty, piece_list()[index]));
+        }
+    }
+    Game game;
+    game_start(game, 4, 8, 0, true);
+    assert(game.fitting_deal);
+    for (int index : game.tray) {
+        assert(fits_anywhere(game.board, piece_list()[index]));
+    }
 }
 
 void test_tray_refill()
 {
     Game game;
-    game_start(game, 7, 8, 1);
+    game_start(game, 7, 8, 1, false);
     int dot = find_piece("dot", 0);
     game.tray = {dot, -1, -1};
     MoveResult r = game_place(game, 0, 0, 0);
@@ -244,6 +270,7 @@ int main()
     test_row_only_and_untouched();
     test_game_over();
     test_rescue();
+    test_fitting_deal();
     test_tray_refill();
     test_deal_fairness();
     test_score_and_streak();

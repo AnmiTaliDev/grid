@@ -49,7 +49,8 @@ void commit_best(App& app)
 
 void start_game(App& app)
 {
-    game_start(app.game, static_cast<uint32_t>(SDL_GetTicksNS()), app.settings.grid, app.settings.rescues);
+    game_start(app.game, static_cast<uint32_t>(SDL_GetTicksNS()), app.settings.grid, app.settings.rescues,
+               app.settings.deal == 1);
     app.previous_best = app.best;
     app.view = GameView{};
     app.over_pending = false;
@@ -225,6 +226,8 @@ void settings_activate(App& app, int hit)
         app.settings.grid = next_grid(app.settings.grid);
     } else if (id == kSettingLift) {
         app.settings.lift = next_lift(app.settings.lift);
+    } else if (id == kSettingDeal) {
+        app.settings.deal = next_deal(app.settings.deal);
     } else if (id == kSettingRescues) {
         app.settings.rescues = next_rescues(app.settings.rescues);
     } else if (id == kSettingFullscreen) {
@@ -500,6 +503,7 @@ void app_draw(App& app, Gfx& g)
         sv.grid = app.settings.grid;
         sv.lift = app.settings.lift;
         sv.rescues = app.settings.rescues;
+        sv.deal = app.settings.deal;
         sv.fullscreen = app.settings.fullscreen;
         sv.reset_armed = app.reset_armed;
         sv.pressed = app.panel_pressed;

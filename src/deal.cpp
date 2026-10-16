@@ -110,6 +110,25 @@ Tray rescue_tray(std::mt19937& rng, const Board& board)
     return tray;
 }
 
+Tray deal_fitting(std::mt19937& rng, const Board& board)
+{
+    const std::vector<Piece>& list = piece_list();
+    std::vector<int> fitting;
+    for (int i = 0; i < static_cast<int>(list.size()); i++) {
+        if (fits_anywhere(board, list[i])) {
+            fitting.push_back(i);
+        }
+    }
+    if (fitting.empty()) {
+        return deal_tray(rng, board);
+    }
+    Tray tray{};
+    for (int& slot : tray) {
+        slot = fitting[static_cast<size_t>(rng() % fitting.size())];
+    }
+    return tray;
+}
+
 Tray deal_tray(std::mt19937& rng, const Board& board)
 {
     std::uniform_int_distribution<int> pick(0, static_cast<int>(piece_list().size()) - 1);

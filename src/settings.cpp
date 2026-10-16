@@ -68,6 +68,11 @@ int next_rescues(int rescues)
     return next_in(kRescueCounts, rescues);
 }
 
+int next_deal(int deal)
+{
+    return deal == 0 ? 1 : 0;
+}
+
 Settings load_settings()
 {
     Settings s;
@@ -86,11 +91,14 @@ Settings load_settings()
     int lift = s.lift;
     int full = 0;
     int rescues = s.rescues;
-    std::sscanf(text.c_str(), "grid %d lift %d fullscreen %d rescues %d", &grid, &lift, &full, &rescues);
+    int deal = s.deal;
+    std::sscanf(text.c_str(), "grid %d lift %d fullscreen %d rescues %d deal %d", &grid, &lift, &full, &rescues,
+                &deal);
     s.grid = allowed(kGridSizes, grid) ? grid : s.grid;
     s.lift = allowed(kHandLifts, lift) ? lift : s.lift;
     s.fullscreen = full != 0;
     s.rescues = allowed(kRescueCounts, rescues) ? rescues : s.rescues;
+    s.deal = deal == 1 ? 1 : 0;
     return s;
 }
 
@@ -101,7 +109,8 @@ void save_settings(const Settings& settings)
         return;
     }
     std::string text = "grid " + std::to_string(settings.grid) + " lift " + std::to_string(settings.lift) +
-                       " fullscreen " + (settings.fullscreen ? "1" : "0") + " rescues " + std::to_string(settings.rescues) + "\n";
+                       " fullscreen " + (settings.fullscreen ? "1" : "0") + " rescues " + std::to_string(settings.rescues) +
+                       " deal " + std::to_string(settings.deal) + "\n";
     if (!SDL_SaveFile(path.c_str(), text.data(), text.size())) {
         SDL_Log("Cannot save settings: %s", SDL_GetError());
     }

@@ -15,6 +15,7 @@ struct Game {
     ScoreState score;
     bool over = false;
     int rescues_left = 0;
+    bool fitting_deal = false;
     std::mt19937 rng;
 };
 
@@ -25,6 +26,6 @@ struct MoveResult {
     uint64_t cleared = 0;
 };
 
-void game_start(Game& game, uint32_t seed, int size, int rescues);
+void game_start(Game& game, uint32_t seed, int size, int rescues, bool fitting_deal);
 bool game_rescue(Game& game);
 MoveResult game_place(Game& game, int slot, int row, int col);

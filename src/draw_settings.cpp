@@ -21,6 +21,7 @@ SettingsLayout settings_layout()
     if (fullscreen_supported()) {
         l.id[l.count++] = kSettingFullscreen;
     }
+    l.id[l.count++] = kSettingDeal;
     l.id[l.count++] = kSettingRescues;
     l.id[l.count++] = kSettingReset;
     float n = static_cast<float>(l.count);
@@ -44,6 +45,9 @@ std::string settings_label(const SettingsView& v, int id)
     }
     if (id == kSettingLift) {
         return v.lift == 0 ? "Piece lift: none" : "Piece lift: " + std::to_string(v.lift) + " px";
+    }
+    if (id == kSettingDeal) {
+        return v.deal == 0 ? "Deal: random" : "Deal: fitting";
     }
     if (id == kSettingRescues) {
         return v.rescues == 0 ? "Rescues: off" : "Rescues: " + std::to_string(v.rescues);
