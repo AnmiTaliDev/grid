@@ -14,7 +14,7 @@ namespace {
 void test_piece_list()
 {
     const std::vector<Piece>& list = piece_list();
-    assert(list.size() == 29);
+    assert(list.size() == 46);
     for (const Piece& p : list) {
         int min_row = 99;
         int min_col = 99;
@@ -31,6 +31,18 @@ void test_piece_list()
     assert(zig.rows == 2 && zig.cols == 3);
     assert(find_piece("square2", 1) == -1);
     assert(find_piece("tee", 3) != -1);
+    assert(find_piece("plus", 0) != -1 && find_piece("plus", 1) == -1);
+    assert(find_piece("cup", 3) != -1 && find_piece("cup", 4) == -1);
+    assert(find_piece("diag2", 1) != -1 && find_piece("diag2", 2) == -1);
+    assert(find_piece("diag3", 1) != -1 && find_piece("diag3", 2) == -1);
+    assert(find_piece("stairs", 3) != -1 && find_piece("stairs", 4) == -1);
+    assert(find_piece("skew5", 3) != -1 && find_piece("skew5", 4) == -1);
+    const Piece& diag = list[find_piece("diag2", 0)];
+    assert(diag.cells.size() == 2 && diag.rows == 2 && diag.cols == 2);
+    Board board;
+    assert(can_place(board, diag, 0, 0));
+    board.cell[0][0] = 1;
+    assert(!can_place(board, diag, 0, 0));
 }
 
 void test_placement_validity()
@@ -178,12 +190,12 @@ void test_rescue()
 void test_fitting_deal()
 {
     Board sparse = sparse_board();
-    int dot = find_piece("dot", 0);
+    int allowed[3] = {find_piece("dot", 0), find_piece("diag2", 0), find_piece("diag3", 0)};
     std::mt19937 rng(21);
     for (int i = 0; i < 500; i++) {
         Tray t = deal_fitting(rng, sparse);
         for (int index : t) {
-            assert(index == dot);
+            assert(index == allowed[0] || index == allowed[1] || index == allowed[2]);
         }
     }
     Board empty;
@@ -218,7 +230,7 @@ void test_deal_fairness()
 {
     std::mt19937 rng(12345);
     Board empty;
-    int counts[29] = {};
+    int counts[46] = {};
     for (int i = 0; i < 3000; i++) {
         Tray t = deal_tray(rng, empty);
         for (int index : t) {
@@ -226,7 +238,7 @@ void test_deal_fairness()
         }
     }
     for (int count : counts) {
-        assert(count > 200 && count < 430);
+        assert(count > 120 && count < 280);
     }
     Board sparse = sparse_board();
     int fitting = 0;
@@ -239,7 +251,7 @@ void test_deal_fairness()
     }
     double share = static_cast<double>(fitting) / deals;
     std::printf("deal on sparse board: %.3f of deals contain a fitting piece\n", share);
-    assert(share > 0.80 && share < 0.95);
+    assert(share > 0.95);
 }
 
 void test_score_and_streak()
