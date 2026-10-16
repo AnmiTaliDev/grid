@@ -62,7 +62,7 @@ std::string settings_label(const SettingsView& v, int id)
     if (id == kSettingFullscreen) {
         return std::string("Fullscreen: ") + (v.fullscreen ? "on" : "off");
     }
-    return v.reset_armed ? "Confirm reset" : "Reset best";
+    return v.reset_armed ? "Confirm reset" : "Reset bests";
 }
 
 ButtonSpec settings_option_button(const SettingsLayout& l, const SettingsView& v, int index)

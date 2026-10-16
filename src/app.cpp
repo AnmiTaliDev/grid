@@ -57,9 +57,10 @@ void drop_saved_game(App& app)
 
 void commit_best(App& app)
 {
-    if (app.game.score.score > app.best) {
-        app.best = app.game.score.score;
-        save_best(app.best);
+    int size = app.game.board.size;
+    if (app.game.score.score > app.bests.get(size)) {
+        app.bests.set(size, app.game.score.score);
+        save_bests(app.bests);
     }
 }
 
@@ -71,7 +72,7 @@ void start_game(App& app)
     options.deal_mode = app.settings.deal;
     options.allowed = pieces_for_shapes(app.settings.shapes);
     game_start(app.game, static_cast<uint32_t>(SDL_GetTicksNS()), options);
-    app.previous_best = app.best;
+    app.previous_best = app.bests.get(app.settings.grid);
     drop_saved_game(app);
     app.view = GameView{};
     app.over_pending = false;
@@ -128,6 +129,12 @@ void cancel_hand(App& app)
     app.view.return_slot = -1;
 }
 
+void refresh_menu(App& app)
+{
+    app.menu.best_size = app.settings.grid;
+    app.menu.best = app.bests.get(app.settings.grid);
+}
+
 void go_menu(App& app)
 {
     persist_game(app);
@@ -136,7 +143,7 @@ void go_menu(App& app)
     bool has_save = app.menu.has_save;
     app.menu = MenuView{};
     app.menu.has_save = has_save;
-    app.menu.best = app.best;
+    refresh_menu(app);
     app.screen = Screen::Menu;
 }
 
@@ -146,7 +153,7 @@ void sync_view(App& app)
     app.view.tray = app.game.tray;
     app.view.score = app.game.score.score;
     app.view.streak = app.game.score.streak;
-    app.view.best = std::max(app.best, app.game.score.score);
+    app.view.best = std::max(app.bests.get(app.game.board.size), app.game.score.score);
 }
 
 int menu_hit(const App& app, float x, float y)
@@ -281,9 +288,9 @@ void settings_activate(App& app, int hit)
         toggle_fullscreen(app);
     } else if (id == kSettingReset) {
         if (was_armed) {
-            app.best = 0;
+            app.bests = Bests{};
             app.game.score = ScoreState{};
-            save_best(0);
+            save_bests(app.bests);
         } else {
             app.reset_armed = true;
         }
@@ -468,12 +475,12 @@ void app_init(App& app, Gfx& g, SDL_Window* window)
         SDL_SetWindowHitTest(window, titlebar_hit_test, nullptr);
     }
     apply_titlebar(app, g);
-    app.best = load_best();
+    app.bests = load_bests();
     app.settings = load_settings();
     if (app.settings.fullscreen && fullscreen_supported()) {
         SDL_SetWindowFullscreen(window, true);
     }
-    app.menu.best = app.best;
+    refresh_menu(app);
     Game probe;
     int previous = 0;
     app.menu.has_save = load_saved_game(probe, previous);

@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <set>
 
+#include "bests.hpp"
 #include "game.hpp"
 #include "serialize.hpp"
 
@@ -392,6 +393,27 @@ void test_save_rejects_garbage()
     assert(!deserialize_game(serialize_game(stuck, 0), out, previous));
 }
 
+void test_bests()
+{
+    Bests b;
+    assert(b.get(6) == 0 && b.get(8) == 0 && b.get(99) == 0 && b.get(-1) == 0);
+    b.set(6, 120);
+    b.set(8, 4500);
+    b.set(99, 5);
+    b.set(7, -3);
+    assert(b.get(6) == 120 && b.get(7) == 0 && b.get(8) == 4500);
+    Bests back = parse_bests(serialize_bests(b));
+    assert(back.get(6) == 120 && back.get(7) == 0 && back.get(8) == 4500);
+    Bests legacy = parse_bests("3240\n");
+    assert(legacy.get(8) == 3240 && legacy.get(6) == 0);
+    assert(parse_bests("").get(8) == 0);
+    assert(parse_bests("garbage").get(8) == 0);
+    Bests partial = parse_bests("bests 6 50 7");
+    assert(partial.get(6) == 50 && partial.get(7) == 0);
+    Bests range = parse_bests("bests 1 9 6 -4 9 9 8 77");
+    assert(range.get(1) == 0 && range.get(6) == 0 && range.get(8) == 77);
+}
+
 void test_tray_refill()
 {
     Game game;
@@ -466,6 +488,7 @@ int main()
     test_dynamic_deal();
     test_save_roundtrip();
     test_save_rejects_garbage();
+    test_bests();
     test_tray_refill();
     test_deal_fairness();
     test_score_and_streak();

@@ -4,6 +4,7 @@
 
 #include <SDL3/SDL.h>
 
+#include "bests.hpp"
 #include "game.hpp"
 #include "gfx.hpp"
 #include "settings.hpp"
@@ -22,7 +23,7 @@ struct App {
     SDL_Window* window = nullptr;
     Screen screen = Screen::Menu;
     Game game;
-    int best = 0;
+    Bests bests;
     int previous_best = 0;
     MenuView menu;
     GameView view;

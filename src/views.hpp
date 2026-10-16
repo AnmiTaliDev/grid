@@ -21,6 +21,7 @@ enum MenuButton {
 
 struct MenuView {
     int best = 0;
+    int best_size = 8;
     bool has_save = false;
     int focus = -1;
     int pressed = -1;

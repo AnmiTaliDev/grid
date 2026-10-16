@@ -6,8 +6,6 @@
 
 #include "serialize.hpp"
 
-#include <algorithm>
-#include <cstdlib>
 #include <string>
 
 namespace {
@@ -72,29 +70,29 @@ void delete_saved_game()
     }
 }
 
-int load_best()
+Bests load_bests()
 {
     std::string path = best_path();
     if (path.empty()) {
-        return 0;
+        return Bests{};
     }
     size_t size = 0;
     void* data = SDL_LoadFile(path.c_str(), &size);
     if (!data) {
-        return 0;
+        return Bests{};
     }
     std::string text(static_cast<const char*>(data), size);
     SDL_free(data);
-    return std::max(0, std::atoi(text.c_str()));
+    return parse_bests(text);
 }
 
-void save_best(int best)
+void save_bests(const Bests& bests)
 {
     std::string path = best_path();
     if (path.empty()) {
         return;
     }
-    std::string text = std::to_string(best) + "\n";
+    std::string text = serialize_bests(bests);
     if (!SDL_SaveFile(path.c_str(), text.data(), text.size())) {
         SDL_Log("Cannot save best score: %s", SDL_GetError());
     }

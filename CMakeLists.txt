@@ -36,6 +36,7 @@ add_library(grid_logic STATIC
     src/format.cpp
     src/drop.cpp
     src/serialize.cpp
+    src/bests.cpp
 )
 target_include_directories(grid_logic PUBLIC src)
 

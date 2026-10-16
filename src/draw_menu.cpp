@@ -71,6 +71,7 @@ void draw_menu(Gfx& g, const MenuView& v)
         draw_button(g, menu_button(kMenuContinue), v.pressed == kMenuContinue, v.focus == kMenuContinue);
     }
     TextStyle best{15, 500};
-    std::string text = "Best\xC2\xA0\xC2\xA0" + format_number(v.best);
+    std::string size = std::to_string(v.best_size) + "x" + std::to_string(v.best_size);
+    std::string text = "Best " + size + "\xC2\xA0\xC2\xA0" + format_number(v.best);
     draw_text_centered_x(g, text, best, 270, 768, normal_line_height(g, best), palette::kDim);
 }
