@@ -53,7 +53,7 @@ void start_game(App& app)
     GameOptions options;
     options.size = app.settings.grid;
     options.rescues = app.settings.rescues;
-    options.fitting_deal = app.settings.deal == 1;
+    options.deal_mode = app.settings.deal;
     options.allowed = pieces_for_shapes(app.settings.shapes);
     game_start(app.game, static_cast<uint32_t>(SDL_GetTicksNS()), options);
     app.previous_best = app.best;

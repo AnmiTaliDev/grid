@@ -6,8 +6,13 @@ namespace {
 
 Tray next_tray(Game& game)
 {
-    return game.fitting_deal ? deal_fitting(game.rng, game.board, game.allowed)
-                             : deal_tray(game.rng, game.board, game.allowed);
+    if (game.deal_mode == 1) {
+        return deal_fitting(game.rng, game.board, game.allowed);
+    }
+    if (game.deal_mode == 2) {
+        return deal_dynamic(game.rng, game.board, game.allowed);
+    }
+    return deal_tray(game.rng, game.board, game.allowed);
 }
 
 }
@@ -15,7 +20,7 @@ Tray next_tray(Game& game)
 void game_start(Game& game, uint32_t seed, const GameOptions& options)
 {
     game.rescues_left = options.rescues;
-    game.fitting_deal = options.fitting_deal;
+    game.deal_mode = options.deal_mode;
     game.allowed = options.allowed;
     game.board = Board{};
     game.board.size = options.size;

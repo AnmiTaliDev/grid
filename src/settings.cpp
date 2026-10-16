@@ -72,7 +72,7 @@ int next_rescues(int rescues)
 
 int next_deal(int deal)
 {
-    return deal == 0 ? 1 : 0;
+    return (deal + 1) % 3;
 }
 
 Settings load_settings()
@@ -102,7 +102,7 @@ Settings load_settings()
     s.lift = allowed(kHandLifts, lift) ? lift : s.lift;
     s.fullscreen = full != 0;
     s.rescues = allowed(kRescueCounts, rescues) ? rescues : s.rescues;
-    s.deal = deal == 1 ? 1 : 0;
+    s.deal = deal >= 0 && deal <= 2 ? deal : 0;
     shapes &= all_shapes();
     s.shapes = shapes != 0 ? shapes : s.shapes;
     return s;

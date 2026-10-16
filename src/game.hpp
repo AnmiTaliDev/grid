@@ -12,7 +12,7 @@
 struct GameOptions {
     int size = 8;
     int rescues = 0;
-    bool fitting_deal = false;
+    int deal_mode = 0;
     uint64_t allowed = ~uint64_t{0};
 };
 
@@ -22,7 +22,7 @@ struct Game {
     ScoreState score;
     bool over = false;
     int rescues_left = 0;
-    bool fitting_deal = false;
+    int deal_mode = 0;
     uint64_t allowed = ~uint64_t{0};
     std::mt19937 rng;
 };

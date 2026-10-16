@@ -53,7 +53,8 @@ std::string settings_label(const SettingsView& v, int id)
         return "Pieces: " + std::to_string(v.shapes_on) + "/" + std::to_string(v.shapes_total);
     }
     if (id == kSettingDeal) {
-        return v.deal == 0 ? "Deal: random" : "Deal: fitting";
+        const char* names[3] = {"random", "fitting", "dynamic"};
+        return std::string("Deal: ") + names[v.deal];
     }
     if (id == kSettingRescues) {
         return v.rescues == 0 ? "Rescues: off" : "Rescues: " + std::to_string(v.rescues);
