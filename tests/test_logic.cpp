@@ -8,6 +8,7 @@
 #include <set>
 
 #include "game.hpp"
+#include "serialize.hpp"
 
 namespace {
 
@@ -331,6 +332,66 @@ void test_dynamic_deal()
     }
 }
 
+void test_save_roundtrip()
+{
+    Game game;
+    GameOptions o = options(7, 2, 2);
+    game_start(game, 11, o);
+    game.board.cell[3][3] = 4;
+    game.board.cell[6][0] = 1;
+    game.score.score = 1234;
+    game.score.streak = 3;
+    int custom = register_custom_piece({{0, 0}, {0, 1}, {1, 1}, {2, 1}, {2, 2}}, 3);
+    game.tray = {find_piece("tee", 1), -1, custom};
+    std::string text = serialize_game(game, 777);
+    Game loaded;
+    loaded.rng.seed(1);
+    int previous = 0;
+    assert(deserialize_game(text, loaded, previous));
+    assert(previous == 777);
+    assert(loaded.board.size == 7);
+    assert(loaded.score.score == 1234 && loaded.score.streak == 3);
+    assert(loaded.rescues_left == 2 && loaded.deal_mode == 2 && !loaded.over);
+    assert(loaded.board.cell[3][3] == 4 && loaded.board.cell[6][0] == 1);
+    assert(loaded.tray[0] == find_piece("tee", 1) && loaded.tray[1] == -1);
+    const Piece& a = piece_list()[custom];
+    const Piece& b = piece_list()[loaded.tray[2]];
+    assert(loaded.tray[2] >= base_piece_count());
+    assert(a.glaze == b.glaze && a.cells.size() == b.cells.size() && a.rows == b.rows && a.cols == b.cols);
+    for (size_t i = 0; i < a.cells.size(); i++) {
+        assert(a.cells[i].row == b.cells[i].row && a.cells[i].col == b.cells[i].col);
+    }
+    assert(serialize_game(loaded, 777) != "");
+}
+
+void test_save_rejects_garbage()
+{
+    Game game;
+    game_start(game, 12, options(8, 1, 0));
+    std::string good = serialize_game(game, 5);
+    Game out;
+    int previous = 0;
+    assert(deserialize_game(good, out, previous));
+    assert(!deserialize_game("", out, previous));
+    assert(!deserialize_game("hello world", out, previous));
+    assert(!deserialize_game(good.substr(0, good.size() / 2), out, previous));
+    std::string bad_version = good;
+    bad_version.replace(bad_version.find(" 1 size"), 7, " 9 size");
+    assert(!deserialize_game(bad_version, out, previous));
+    std::string bad_cell = good;
+    bad_cell.replace(bad_cell.find("cells ") + 6, 1, "9");
+    assert(!deserialize_game(bad_cell, out, previous));
+    Game stuck;
+    game_start(stuck, 3, options(8, 0, 0));
+    for (int r = 0; r < kBoardSize; r++) {
+        for (int c = 0; c < kBoardSize; c++) {
+            stuck.board.cell[r][c] = (r + c) % 2 == 0 ? 1 : 0;
+        }
+    }
+    stuck.tray = {find_piece("bar2", 0), find_piece("bar2", 1), -1};
+    assert(!deserialize_game(serialize_game(stuck, 0), out, previous));
+}
+
 void test_tray_refill()
 {
     Game game;
@@ -403,6 +464,8 @@ int main()
     test_fitting_deal();
     test_piece_filter();
     test_dynamic_deal();
+    test_save_roundtrip();
+    test_save_rejects_garbage();
     test_tray_refill();
     test_deal_fairness();
     test_score_and_streak();

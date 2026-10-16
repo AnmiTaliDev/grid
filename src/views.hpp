@@ -16,10 +16,12 @@ enum MenuButton {
     kMenuPlay,
     kMenuSettings,
     kMenuQuit,
+    kMenuContinue,
 };
 
 struct MenuView {
     int best = 0;
+    bool has_save = false;
     int focus = -1;
     int pressed = -1;
 };

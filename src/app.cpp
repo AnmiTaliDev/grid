@@ -40,6 +40,21 @@ void bar_click(App& app, float x, float y)
     }
 }
 
+void persist_game(App& app)
+{
+    bool active = (app.screen == Screen::Play || app.screen == Screen::Pause) && !app.game.over;
+    if (active) {
+        save_current_game(app.game, app.previous_best);
+        app.menu.has_save = true;
+    }
+}
+
+void drop_saved_game(App& app)
+{
+    delete_saved_game();
+    app.menu.has_save = false;
+}
+
 void commit_best(App& app)
 {
     if (app.game.score.score > app.best) {
@@ -57,6 +72,7 @@ void start_game(App& app)
     options.allowed = pieces_for_shapes(app.settings.shapes);
     game_start(app.game, static_cast<uint32_t>(SDL_GetTicksNS()), options);
     app.previous_best = app.best;
+    drop_saved_game(app);
     app.view = GameView{};
     app.over_pending = false;
     app.screen = Screen::Play;
@@ -79,9 +95,23 @@ void toggle_fullscreen(App& app)
     save_settings(app.settings);
 }
 
+void continue_game(App& app)
+{
+    app.game.rng.seed(static_cast<uint32_t>(SDL_GetTicksNS()));
+    if (!load_saved_game(app.game, app.previous_best)) {
+        app.menu.has_save = false;
+        return;
+    }
+    app.view = GameView{};
+    app.over_pending = false;
+    app.screen = Screen::Play;
+}
+
 void activate_menu(App& app, int which)
 {
-    if (which == kMenuPlay) {
+    if (which == kMenuContinue) {
+        continue_game(app);
+    } else if (which == kMenuPlay) {
         start_game(app);
     } else if (which == kMenuSettings) {
         app.reset_armed = false;
@@ -100,9 +130,12 @@ void cancel_hand(App& app)
 
 void go_menu(App& app)
 {
+    persist_game(app);
     commit_best(app);
     cancel_hand(app);
+    bool has_save = app.menu.has_save;
     app.menu = MenuView{};
+    app.menu.has_save = has_save;
     app.menu.best = app.best;
     app.screen = Screen::Menu;
 }
@@ -116,12 +149,15 @@ void sync_view(App& app)
     app.view.best = std::max(app.best, app.game.score.score);
 }
 
-int menu_hit(float x, float y)
+int menu_hit(const App& app, float x, float y)
 {
     for (int i = 0; i < 3; i++) {
         if (inside(menu_button(i).box, x, y)) {
             return i;
         }
+    }
+    if (app.menu.has_save && inside(menu_button(kMenuContinue).box, x, y)) {
+        return kMenuContinue;
     }
     return -1;
 }
@@ -160,6 +196,9 @@ void finish_move(App& app, const MoveResult& result)
     if (app.game.over) {
         app.over_pending = true;
         app.over_ms = 0;
+        drop_saved_game(app);
+    } else {
+        persist_game(app);
     }
 }
 
@@ -283,7 +322,7 @@ void pointer_down(App& app, Gfx& g, float x, float y)
 {
     if (app.screen == Screen::Menu) {
         app.menu.focus = -1;
-        app.menu.pressed = menu_hit(x, y);
+        app.menu.pressed = menu_hit(app, x, y);
     } else if (app.screen == Screen::Play) {
         play_down(app, x, y);
     } else if (app.screen == Screen::Pause) {
@@ -309,7 +348,7 @@ void pointer_move(App& app, float x, float y)
 void pointer_up(App& app, Gfx& g, float x, float y)
 {
     if (app.screen == Screen::Menu) {
-        int hit = menu_hit(x, y);
+        int hit = menu_hit(app, x, y);
         int pressed = app.menu.pressed;
         app.menu.pressed = -1;
         if (hit >= 0 && hit == pressed) {
@@ -385,8 +424,18 @@ void key_down(App& app, const SDL_KeyboardEvent& key)
         return;
     }
     if (key.key == SDLK_TAB) {
-        int step = (key.mod & SDL_KMOD_SHIFT) ? 2 : 1;
-        app.menu.focus = app.menu.focus < 0 ? (step == 1 ? 0 : 2) : (app.menu.focus + step) % 3;
+        int order[4] = {kMenuContinue, kMenuPlay, kMenuSettings, kMenuQuit};
+        int first = app.menu.has_save ? 0 : 1;
+        int count = 4 - first;
+        int at = -1;
+        for (int i = 0; i < count; i++) {
+            if (order[first + i] == app.menu.focus) {
+                at = i;
+            }
+        }
+        bool backwards = (key.mod & SDL_KMOD_SHIFT) != 0;
+        int next = at < 0 ? (backwards ? count - 1 : 0) : (at + (backwards ? count - 1 : 1)) % count;
+        app.menu.focus = order[first + next];
     } else if (key.key == SDLK_RETURN || key.key == SDLK_KP_ENTER) {
         activate_menu(app, app.menu.focus < 0 ? kMenuPlay : app.menu.focus);
     }
@@ -403,6 +452,7 @@ bool SDLCALL lifecycle_watch(void* data, SDL_Event* event)
         app.view.pause_pressed = false;
         app.screen = Screen::Pause;
     }
+    persist_game(app);
     commit_best(app);
     save_settings(app.settings);
     return true;
@@ -424,6 +474,9 @@ void app_init(App& app, Gfx& g, SDL_Window* window)
         SDL_SetWindowFullscreen(window, true);
     }
     app.menu.best = app.best;
+    Game probe;
+    int previous = 0;
+    app.menu.has_save = load_saved_game(probe, previous);
 }
 
 void app_event(App& app, Gfx& g, SDL_Event& event)
@@ -574,6 +627,7 @@ void app_draw(App& app, Gfx& g)
 
 void app_shutdown(App& app)
 {
+    persist_game(app);
     commit_best(app);
     save_settings(app.settings);
 }
