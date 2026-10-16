@@ -3,6 +3,7 @@
 #pragma once
 
 #include "gfx.hpp"
+#include "settings.hpp"
 #include "views.hpp"
 #include "widgets.hpp"
 
@@ -26,13 +27,15 @@ struct PauseLayout {
 struct SettingsLayout {
     Rect panel;
     float title_top;
+    int count;
+    int id[4];
     Rect option[4];
     Rect back;
 };
 
 ButtonSpec menu_button(int which);
 SettingsLayout settings_layout();
-std::string settings_label(const SettingsView& v, int index);
+std::string settings_label(const SettingsView& v, int id);
 ButtonSpec settings_option_button(const SettingsLayout& l, const SettingsView& v, int index);
 ButtonSpec settings_back_button(const SettingsLayout& l);
 OverLayout over_layout(Gfx& g, bool chip);
@@ -49,4 +52,4 @@ void draw_settings(Gfx& g, const SettingsView& v);
 void draw_game(Gfx& g, const GameView& v);
 void draw_game_over(Gfx& g, const OverView& v);
 void draw_pause(Gfx& g, const PauseView& v);
-void warm_panels(Gfx& g);
+bool warm_step(Gfx& g, int step);

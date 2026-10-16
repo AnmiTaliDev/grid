@@ -44,6 +44,15 @@ bool allowed(const int (&values)[N], int value)
 
 }
 
+bool fullscreen_supported()
+{
+#if defined(SDL_PLATFORM_WINDOWS) || defined(SDL_PLATFORM_LINUX) || defined(SDL_PLATFORM_MACOS)
+    return true;
+#else
+    return false;
+#endif
+}
+
 int next_grid(int grid)
 {
     return next_in(kGridSizes, grid);
