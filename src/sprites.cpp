@@ -243,25 +243,52 @@ const Sprite& panel_sprite(Gfx& g, float height)
     return store(g, key, c);
 }
 
-void warm_sprites(Gfx& g)
+bool warm_sprites_step(Gfx& g, int step)
 {
-    for (int glaze = 0; glaze < 5; glaze++) {
-        tile_sprite(g, 54, glaze, false);
-        tile_sprite(g, 54, glaze, true);
-        tile_sprite(g, 30, glaze, false);
-        hand_tile_sprite(g, glaze);
-        ghost_sprite(g, glaze);
+    if (step < 25) {
+        int glaze = step / 5;
+        int kind = step % 5;
+        if (kind == 0) {
+            tile_sprite(g, 54, glaze, false);
+        } else if (kind == 1) {
+            tile_sprite(g, 30, glaze, false);
+        } else if (kind == 2) {
+            tile_sprite(g, 28, glaze, false);
+        } else if (kind == 3) {
+            ghost_sprite(g, glaze);
+        } else {
+            hand_tile_sprite(g, glaze);
+        }
+        return true;
     }
-    for (int glaze = 0; glaze < 5; glaze++) {
-        tile_sprite(g, 28, glaze, false);
+    int rest = step - 25;
+    if (rest < 5) {
+        tile_sprite(g, 54, rest, true);
+        return true;
     }
-    bone_tile_sprite(g);
-    well_sprite(g, 54, false);
-    well_sprite(g, 54, true);
-    well_sprite(g, 28, false);
-    bed_sprite(g, false, 8);
-    bed_sprite(g, true, 8);
-    tray_slot_sprite(g);
-    empty_slot_sprite(g);
-    pause_button_sprite(g, false);
+    switch (rest - 5) {
+    case 0:
+        bone_tile_sprite(g);
+        return true;
+    case 1:
+        well_sprite(g, 54, false);
+        well_sprite(g, 54, true);
+        return true;
+    case 2:
+        well_sprite(g, 28, false);
+        return true;
+    case 3:
+        bed_sprite(g, false, 8);
+        return true;
+    case 4:
+        bed_sprite(g, true, 8);
+        return true;
+    case 5:
+        tray_slot_sprite(g);
+        empty_slot_sprite(g);
+        pause_button_sprite(g, false);
+        return true;
+    default:
+        return false;
+    }
 }

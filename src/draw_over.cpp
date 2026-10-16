@@ -131,9 +131,24 @@ void draw_pause(Gfx& g, const PauseView& v)
     draw_button(g, pause_menu_button(l), v.pressed == 1, false);
 }
 
-void warm_panels(Gfx& g)
+bool warm_step(Gfx& g, int step)
 {
-    panel_sprite(g, over_layout(g, true).panel.h);
-    panel_sprite(g, over_layout(g, false).panel.h);
-    panel_sprite(g, pause_layout().panel.h);
+    if (warm_sprites_step(g, step)) {
+        return true;
+    }
+    int panel = 0;
+    while (warm_sprites_step(g, panel)) {
+        panel++;
+    }
+    int index = step - panel;
+    if (index == 0) {
+        panel_sprite(g, over_layout(g, true).panel.h);
+    } else if (index == 1) {
+        panel_sprite(g, over_layout(g, false).panel.h);
+    } else if (index == 2) {
+        panel_sprite(g, pause_layout().panel.h);
+    } else {
+        return false;
+    }
+    return true;
 }

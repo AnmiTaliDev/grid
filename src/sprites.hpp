@@ -29,4 +29,4 @@ const Sprite& focus_ring_sprite(Gfx& g, float w, float h);
 const Sprite& would_clear_sprite(Gfx& g, float w, float h);
 const Sprite& panel_sprite(Gfx& g, float height);
 
-void warm_sprites(Gfx& g);
+bool warm_sprites_step(Gfx& g, int step);
