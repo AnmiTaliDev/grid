@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cstdio>
 #include <algorithm>
+#include <bit>
 #include <algorithm>
 #include <cmath>
 #include <fstream>
@@ -102,7 +103,7 @@ void test_simultaneous_clear()
     MoveResult r = game_place(game, 0, 0, 0);
     assert(r.ok);
     assert(r.lines == 2);
-    assert(__builtin_popcountll(r.cleared) == 15);
+    assert(std::popcount(r.cleared) == 15);
     for (int i = 0; i < kBoardSize; i++) {
         assert(game.board.cell[0][i] == 0 && game.board.cell[i][0] == 0);
     }
@@ -125,7 +126,7 @@ void test_smaller_grid()
     game.tray = {dot, dot, dot};
     MoveResult r = game_place(game, 0, 2, 0);
     assert(r.ok && r.lines == 1);
-    assert(__builtin_popcountll(r.cleared) == 6);
+    assert(std::popcount(r.cleared) == 6);
     assert(game.board.cell[2][0] == 0 && game.board.cell[2][5] == 0);
 }
 
@@ -249,7 +250,7 @@ void test_piece_filter()
     uint64_t allowed = pieces_for_shapes(only_dot);
     assert(allowed == uint64_t{1} << find_piece("dot", 0));
     uint32_t bars = (1u << piece_list()[find_piece("bar2", 0)].shape) | (1u << piece_list()[find_piece("bar3", 0)].shape);
-    assert(__builtin_popcountll(pieces_for_shapes(bars)) == 4);
+    assert(std::popcount(pieces_for_shapes(bars)) == 4);
     Board empty;
     std::mt19937 rng(77);
     for (int i = 0; i < 300; i++) {

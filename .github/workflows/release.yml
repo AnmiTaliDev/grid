@@ -1,0 +1,187 @@
+# SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
+# SPDX-License-Identifier: GPL-3.0-only
+name: Debug builds
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:
+  SDL_REF: release-3.4.18
+  SDL_TTF_REF: release-3.2.2
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: libsdl-org/SDL
+          ref: ${{ env.SDL_REF }}
+          path: deps/SDL
+      - uses: actions/checkout@v4
+        with:
+          repository: libsdl-org/SDL_ttf
+          ref: ${{ env.SDL_TTF_REF }}
+          path: deps/SDL_ttf
+          submodules: recursive
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libasound2-dev libpulse-dev libaudio-dev libjack-dev libsndio-dev \
+            libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev \
+            libxkbcommon-dev libdrm-dev libgbm-dev libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev \
+            libdbus-1-dev libibus-1.0-dev libudev-dev libpipewire-0.3-dev libwayland-dev libdecor-0-dev liburing-dev
+      - name: Build
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug \
+            -DSDL3_SOURCE_DIR=$PWD/deps/SDL -DSDL3_TTF_SOURCE_DIR=$PWD/deps/SDL_ttf
+          cmake --build build --target grid
+      - name: Package
+        run: |
+          NAME="Grid-${GITHUB_REF_NAME}-linux-x86_64-debug"
+          mkdir -p "dist/$NAME"
+          cp build/grid "dist/$NAME/"
+          cp -r assets "dist/$NAME/"
+          cp LICENSE "dist/$NAME/"
+          tar -C dist -czf "dist/$NAME.tar.gz" "$NAME"
+          rm -rf "dist/$NAME"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: dist/*.tar.gz
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: libsdl-org/SDL
+          ref: ${{ env.SDL_REF }}
+          path: deps/SDL
+      - uses: actions/checkout@v4
+        with:
+          repository: libsdl-org/SDL_ttf
+          ref: ${{ env.SDL_TTF_REF }}
+          path: deps/SDL_ttf
+          submodules: recursive
+      - name: Build
+        shell: bash
+        run: |
+          cmake -S . -B build \
+            -DSDL3_SOURCE_DIR="$PWD/deps/SDL" -DSDL3_TTF_SOURCE_DIR="$PWD/deps/SDL_ttf"
+          cmake --build build --config Debug --target grid
+      - name: Package
+        shell: bash
+        run: |
+          NAME="Grid-${GITHUB_REF_NAME}-windows-x64-debug"
+          mkdir -p "dist/$NAME"
+          cp build/Debug/grid.exe "dist/$NAME/"
+          cp -r assets "dist/$NAME/"
+          cp LICENSE "dist/$NAME/"
+          cd dist
+          7z a "$NAME.zip" "$NAME" > /dev/null
+          rm -rf "$NAME"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/*.zip
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: libsdl-org/SDL
+          ref: ${{ env.SDL_REF }}
+          path: deps/SDL
+      - uses: actions/checkout@v4
+        with:
+          repository: libsdl-org/SDL_ttf
+          ref: ${{ env.SDL_TTF_REF }}
+          path: deps/SDL_ttf
+          submodules: recursive
+      - name: Build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
+            -DSDL3_SOURCE_DIR="$PWD/deps/SDL" -DSDL3_TTF_SOURCE_DIR="$PWD/deps/SDL_ttf"
+          cmake --build build --target grid
+      - name: Package
+        run: |
+          NAME="Grid-${GITHUB_REF_NAME}-macos-debug"
+          mkdir -p "dist/$NAME"
+          cp build/grid "dist/$NAME/"
+          cp -r assets "dist/$NAME/"
+          cp LICENSE "dist/$NAME/"
+          cd dist
+          zip -qr "$NAME.zip" "$NAME"
+          rm -rf "$NAME"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: dist/*.zip
+
+  android:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: libsdl-org/SDL
+          ref: ${{ env.SDL_REF }}
+          path: deps/SDL
+      - uses: actions/checkout@v4
+        with:
+          repository: libsdl-org/SDL_ttf
+          ref: ${{ env.SDL_TTF_REF }}
+          path: deps/SDL_ttf
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Install Android packages
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses > /dev/null
+          "$SDKMANAGER" "platforms;android-35" "ndk;28.2.13676358" "cmake;3.22.1"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+      - name: Build debug APK
+        env:
+          SDL3_SOURCE_DIR: ${{ github.workspace }}/deps/SDL
+          SDL3_TTF_SOURCE_DIR: ${{ github.workspace }}/deps/SDL_ttf
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          gradle -p android assembleDebug -Pgrid.version="$VERSION" -Pgrid.versionCode="$GITHUB_RUN_NUMBER"
+          mkdir -p dist
+          cp android/app/build/outputs/apk/debug/app-debug.apk "dist/Grid-${GITHUB_REF_NAME}-android-debug.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: dist/*.apk
+
+  publish:
+    needs: [linux, windows, macos, android]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$GITHUB_REF_NAME" dist/*
+          --repo "$GITHUB_REPOSITORY"
+          --title "Grid $GITHUB_REF_NAME"
+          --prerelease
+          --generate-notes

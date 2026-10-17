@@ -20,8 +20,8 @@ android {
         applicationId = 'dev.anmitali.grid'
         minSdk = 21
         targetSdk = 35
-        versionCode = 1
-        versionName = '0.1.0'
+        versionCode = (findProperty('grid.versionCode') ?: '1') as int
+        versionName = findProperty('grid.version') ?: '0.1.0'
         externalNativeBuild {
             cmake {
                 arguments "-DANDROID_PLATFORM=android-21", "-DANDROID_STL=c++_static",

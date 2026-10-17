@@ -20,6 +20,12 @@ ctest --test-dir build
 ./build/grid
 ```
 
+To build SDL3 and SDL3_ttf from source instead of using installed packages, pass `-DSDL3_SOURCE_DIR=<path>` and `-DSDL3_TTF_SOURCE_DIR=<path>` to CMake. They are linked statically on desktop.
+
+## Releases
+
+Pushing a tag that starts with `v` builds debug packages for Linux, Windows, macOS and Android and attaches them to a pre-release. Debug APKs are signed with a temporary key, so each build must be uninstalled before installing the next.
+
 ## Android
 
 Requires the Android SDK, NDK 28.2.13676358, CMake 3.22.1 from the SDK, JDK 21 and Gradle 8.13 (the Android Gradle plugin used here does not work with Gradle 9.6 or newer). The SDL3 and SDL3_ttf source trees are built with the app. SDL3_ttf needs its `external` submodules checked out.

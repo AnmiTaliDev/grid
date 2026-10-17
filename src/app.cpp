@@ -3,6 +3,7 @@
 #include "app.hpp"
 
 #include <algorithm>
+#include <bit>
 
 #include "draw.hpp"
 #include "drop.hpp"
@@ -820,7 +821,7 @@ void app_draw(App& app, Gfx& g)
         sv.volume = app.settings.volume;
         sv.vibration = app.settings.vibration;
         sv.deal = app.settings.deal;
-        sv.shapes_on = __builtin_popcount(app.settings.shapes);
+        sv.shapes_on = std::popcount(app.settings.shapes);
         sv.shapes_total = shape_count();
         sv.fullscreen = app.settings.fullscreen;
         sv.reset_armed = app.reset_armed;
