@@ -18,6 +18,7 @@ enum SettingId {
     kSettingUndo,
     kSettingHold,
     kSettingSound,
+    kSettingLanguage,
     kSettingVibration,
     kSettingDeal,
     kSettingPieces,
@@ -35,6 +36,7 @@ struct Settings {
     int volume = 70;
     bool vibration = true;
     bool tutorial_seen = false;
+    int lang = 0;
     int deal = 0;
     uint32_t shapes = 0;
     bool fullscreen = false;
@@ -46,6 +48,7 @@ int next_lift(int lift);
 int next_rescues(int rescues);
 int next_undos(int undos);
 int next_volume(int volume);
+int next_language(int lang);
 int next_deal(int deal);
 Settings load_settings();
 void save_settings(const Settings& settings);

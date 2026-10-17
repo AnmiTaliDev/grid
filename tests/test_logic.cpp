@@ -13,6 +13,7 @@
 #include "mixer.hpp"
 #include "pulses.hpp"
 #include "format.hpp"
+#include "i18n.hpp"
 #include "serialize.hpp"
 #include "stats.hpp"
 #include "synth.hpp"
@@ -635,6 +636,67 @@ void test_tutorial()
     assert(tutorial_ease(1.0f, 2.0f, 2.0f) == 0.0f && tutorial_ease(3.0f, 2.0f, 2.0f) == 1.0f);
 }
 
+size_t codepoints(const std::string& s)
+{
+    size_t n = 0;
+    for (unsigned char c : s) {
+        n += (c & 0xC0) != 0x80 ? 1 : 0;
+    }
+    return n;
+}
+
+bool has_cyrillic(const std::string& s)
+{
+    for (size_t i = 0; i + 1 < s.size(); i++) {
+        unsigned char c = static_cast<unsigned char>(s[i]);
+        if (c == 0xD0 || c == 0xD1) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void test_i18n()
+{
+    for (int i = 0; i < static_cast<int>(Str::Count); i++) {
+        std::string en = tr(Lang::English, static_cast<Str>(i));
+        std::string ru = tr(Lang::Russian, static_cast<Str>(i));
+        assert(!en.empty() && !ru.empty());
+        assert(!has_cyrillic(en) && has_cyrillic(ru));
+        assert(en.find("\xE2\x80\x94") == std::string::npos && ru.find("\xE2\x80\x94") == std::string::npos);
+        assert(ru.find("\xE2\x80\x93") == std::string::npos);
+        assert(codepoints(ru) <= 30);
+    }
+    assert(std::string(tr(Lang::English, Str::Play)) == "Play" && std::string(tr(Lang::Russian, Str::Play)) == "Играть");
+    assert(std::string(tr(Lang::Russian, Str::Menu)) == "Меню");
+    int expected[] = {0, 2, 2, 1, 2, 0, 1, 2, 2, 2, 2, 2, 0, 2, 2, 1, 2, 2, 1, 2, 2, 0, 2};
+    int counts[] = {1, 5, 11, 2, 12, 21, 22, 25, 100, 111, 112, 113, 101, 0, 15, 4, 14, 19, 33, 40, 50, 1001, 1011};
+    for (size_t i = 0; i < sizeof(counts) / sizeof(counts[0]); i++) {
+        assert(plural_form_ru(counts[i]) == expected[i]);
+    }
+    assert(lines_text(Lang::English, 1) == "1 line" && lines_text(Lang::English, 3) == "3 lines");
+    assert(lines_text(Lang::Russian, 1) == "1 линия" && lines_text(Lang::Russian, 2) == "2 линии");
+    assert(lines_text(Lang::Russian, 5) == "5 линий" && lines_text(Lang::Russian, 11) == "11 линий");
+    assert(lines_text(Lang::Russian, 21) == "21 линия" && lines_text(Lang::Russian, 24) == "24 линии");
+    assert(format_duration(45, Lang::Russian) == "45 с");
+    assert(format_duration(725, Lang::Russian) == "12 мин 05 с");
+    assert(format_duration(3725, Lang::Russian) == "1 ч 02 мин");
+    assert(detect_language("ru") == Lang::Russian && detect_language("ru_RU") == Lang::Russian);
+    assert(detect_language("en") == Lang::English && detect_language("de") == Lang::English);
+    assert(detect_language(nullptr) == Lang::English && detect_language("") == Lang::English);
+    assert(lang_from_index(1) == Lang::Russian && lang_from_index(0) == Lang::English);
+    assert(lang_from_index(7) == Lang::English && lang_from_index(-1) == Lang::English);
+    assert(language_name(Lang::Russian) == "Русский" && language_name(Lang::English) == "English");
+    for (int page = 0; page < kTutorialPages; page++) {
+        const std::vector<std::string>& ru = tutorial_caption(page, Lang::Russian);
+        assert(ru.size() == tutorial_caption(page, Lang::English).size());
+        for (const std::string& line : ru) {
+            assert(has_cyrillic(line) && codepoints(line) <= 38);
+            assert(line.find("\xE2\x80\x94") == std::string::npos);
+        }
+    }
+}
+
 void test_tray_refill()
 {
     Game game;
@@ -716,6 +778,7 @@ int main()
     test_pulses();
     test_stats();
     test_tutorial();
+    test_i18n();
     test_tray_refill();
     test_deal_fairness();
     test_score_and_streak();

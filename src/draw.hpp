@@ -29,8 +29,8 @@ struct SettingsLayout {
     Rect panel;
     float title_top;
     int count;
-    int id[10];
-    Rect option[10];
+    int id[12];
+    Rect option[12];
     Rect back;
 };
 
@@ -44,7 +44,7 @@ struct PiecesLayout {
     Rect back;
 };
 
-ButtonSpec menu_button(int which);
+ButtonSpec menu_button(int which, Lang lang = Lang::English);
 struct StatsLayout {
     Rect panel;
     float title_top;
@@ -63,23 +63,23 @@ struct TutorialLayout {
 };
 
 TutorialLayout tutorial_layout();
-ButtonSpec tutorial_next_button(const TutorialLayout& l, bool last);
-ButtonSpec tutorial_skip_button(const TutorialLayout& l);
+ButtonSpec tutorial_next_button(const TutorialLayout& l, bool last, Lang lang = Lang::English);
+ButtonSpec tutorial_skip_button(const TutorialLayout& l, Lang lang = Lang::English);
 StatsLayout stats_layout();
-ButtonSpec stats_back_button(const StatsLayout& l);
+ButtonSpec stats_back_button(const StatsLayout& l, Lang lang = Lang::English);
 PiecesLayout pieces_layout();
-ButtonSpec pieces_back_button(const PiecesLayout& l);
+ButtonSpec pieces_back_button(const PiecesLayout& l, Lang lang = Lang::English);
 SettingsLayout settings_layout();
 std::string settings_label(const SettingsView& v, int id);
 ButtonSpec settings_option_button(const SettingsLayout& l, const SettingsView& v, int index);
-ButtonSpec settings_back_button(const SettingsLayout& l);
-OverLayout over_layout(Gfx& g, bool chip, bool rescue);
+ButtonSpec settings_back_button(const SettingsLayout& l, Lang lang = Lang::English);
+OverLayout over_layout(Gfx& g, bool chip, bool rescue, Lang lang = Lang::English);
 PauseLayout pause_layout();
-ButtonSpec over_rescue_button(const OverLayout& l, int left);
-ButtonSpec over_again_button(const OverLayout& l);
-ButtonSpec over_menu_button(const OverLayout& l);
-ButtonSpec pause_resume_button(const PauseLayout& l);
-ButtonSpec pause_menu_button(const PauseLayout& l);
+ButtonSpec over_rescue_button(const OverLayout& l, int left, Lang lang = Lang::English);
+ButtonSpec over_again_button(const OverLayout& l, Lang lang = Lang::English);
+ButtonSpec over_menu_button(const OverLayout& l, Lang lang = Lang::English);
+ButtonSpec pause_resume_button(const PauseLayout& l, Lang lang = Lang::English);
+ButtonSpec pause_menu_button(const PauseLayout& l, Lang lang = Lang::English);
 
 void draw_header_score(Gfx& g, int score, float alpha);
 void draw_backdrop(Gfx& g);

@@ -123,7 +123,7 @@ void draw_page_two(Gfx& g, const Rect& art, float seconds)
     draw_sprite(g, tile_sprite(g, 28, glaze, false), x, y, 1.0f);
 }
 
-void draw_page_three(Gfx& g, const Rect& art, float seconds)
+void draw_page_three(Gfx& g, const Rect& art, float seconds, Lang lang)
 {
     float t = tutorial_loop(seconds);
     struct Item {
@@ -132,9 +132,9 @@ void draw_page_three(Gfx& g, const Rect& art, float seconds)
         int glaze;
     };
     const Item items[3] = {
-        {"Undo", "takes back the last move", kCobalt},
-        {"Hold", "keeps a piece for later", kSaffron},
-        {"Rescue", "gives new pieces when stuck", kCeladon},
+        {tr(lang, Str::Undo), tr(lang, Str::UndoHelp), kCobalt},
+        {tr(lang, Str::Hold), tr(lang, Str::HoldHelp), kSaffron},
+        {tr(lang, Str::Rescue), tr(lang, Str::RescueHelp), kCeladon},
     };
     TextStyle name{20, 800};
     TextStyle text{16, 500};
@@ -167,15 +167,15 @@ TutorialLayout tutorial_layout()
     return l;
 }
 
-ButtonSpec tutorial_next_button(const TutorialLayout& l, bool last)
+ButtonSpec tutorial_next_button(const TutorialLayout& l, bool last, Lang lang)
 {
-    return {l.next, 16, 4, palette::kNight, palette::kPanelPrimaryEdge, last ? "Start" : "Next", {24, 800},
+    return {l.next, 16, 4, palette::kNight, palette::kPanelPrimaryEdge, tr(lang, last ? Str::Start : Str::Next), {24, 800},
             palette::kBone};
 }
 
-ButtonSpec tutorial_skip_button(const TutorialLayout& l)
+ButtonSpec tutorial_skip_button(const TutorialLayout& l, Lang lang)
 {
-    return {l.skip, 16, 4, palette::kPanelSecondary, palette::kBoneEdge, "Skip", {18, 600}, palette::kInk};
+    return {l.skip, 16, 4, palette::kPanelSecondary, palette::kBoneEdge, tr(lang, Str::Skip), {18, 600}, palette::kInk};
 }
 
 void draw_tutorial(Gfx& g, const TutorialView& v)
@@ -183,7 +183,7 @@ void draw_tutorial(Gfx& g, const TutorialView& v)
     draw_backdrop(g);
     TutorialLayout l = tutorial_layout();
     draw_sprite(g, panel_sprite(g, l.panel.h), l.panel.x, l.panel.y);
-    draw_text_in_line(g, "How to play", {28, 700}, kContentX, l.title_top, kTitleLine, palette::kPanelTitle);
+    draw_text_in_line(g, tr(v.lang, Str::HowToPlay), {28, 700}, kContentX, l.title_top, kTitleLine, palette::kPanelTitle);
     int page = std::clamp(v.page, 0, kTutorialPages - 1);
     float dots_w = static_cast<float>(kTutorialPages) * 14.0f;
     for (int i = 0; i < kTutorialPages; i++) {
@@ -195,18 +195,18 @@ void draw_tutorial(Gfx& g, const TutorialView& v)
     } else if (page == 1) {
         draw_page_two(g, l.art, v.seconds);
     } else {
-        draw_page_three(g, l.art, v.seconds);
+        draw_page_three(g, l.art, v.seconds, v.lang);
     }
     TextStyle caption{18, 600};
     float n = normal_line_height(g, caption);
-    const std::vector<std::string>& lines = tutorial_caption(page);
+    const std::vector<std::string>& lines = tutorial_caption(page, v.lang);
     for (size_t i = 0; i < lines.size(); i++) {
         draw_text_in_line(g, lines[i], caption, kContentX, l.caption_top + static_cast<float>(i) * (n + 4), n,
                           palette::kInk);
     }
     bool last = page == kTutorialPages - 1;
-    draw_button(g, tutorial_next_button(l, last), v.pressed == 0, false);
+    draw_button(g, tutorial_next_button(l, last, v.lang), v.pressed == 0, false);
     if (!last) {
-        draw_button(g, tutorial_skip_button(l), v.pressed == 1, false);
+        draw_button(g, tutorial_skip_button(l, v.lang), v.pressed == 1, false);
     }
 }

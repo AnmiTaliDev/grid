@@ -36,19 +36,19 @@ void draw_dimmed_base(Gfx& g, const Board& board, int score)
     }
 }
 
-ButtonSpec primary_button(Rect box, const char* label)
+ButtonSpec primary_button(Rect box, const std::string& label)
 {
     return {box, 16, 4, palette::kNight, palette::kPanelPrimaryEdge, label, {24, 800}, palette::kBone};
 }
 
-ButtonSpec secondary_button(Rect box, const char* label)
+ButtonSpec secondary_button(Rect box, const std::string& label)
 {
     return {box, 16, 4, palette::kPanelSecondary, palette::kBoneEdge, label, {18, 600}, palette::kInk};
 }
 
 }
 
-OverLayout over_layout(Gfx& g, bool chip, bool rescue)
+OverLayout over_layout(Gfx& g, bool chip, bool rescue, Lang lang)
 {
     float n = normal_line_height(g, kChipStyle);
     OverLayout l;
@@ -58,7 +58,7 @@ OverLayout over_layout(Gfx& g, bool chip, bool rescue)
     float cursor = score_bottom + 16;
     l.chip = {kContentX, cursor, 0, n + 16};
     if (chip) {
-        l.chip.w = text_width(g, "New best", kChipStyle) + 28;
+        l.chip.w = text_width(g, tr(lang, Str::NewBest), kChipStyle) + 28;
         cursor = cursor + n + 16 + 14;
     }
     l.line_top = cursor;
@@ -85,53 +85,55 @@ PauseLayout pause_layout()
     return l;
 }
 
-ButtonSpec over_rescue_button(const OverLayout& l, int left)
+ButtonSpec over_rescue_button(const OverLayout& l, int left, Lang lang)
 {
     return {l.rescue, 16, 4, palette::kSaffronFace, palette::kSaffronEdge,
-            "Rescue (" + std::to_string(left) + " left)", {24, 800}, palette::kInk};
+            std::string(tr(lang, Str::Rescue)) + " (" + tr(lang, Str::Left) + " " + std::to_string(left) + ")",
+            {24, 800}, palette::kInk};
 }
 
-ButtonSpec over_again_button(const OverLayout& l)
+ButtonSpec over_again_button(const OverLayout& l, Lang lang)
 {
-    return primary_button(l.again, "Again");
+    return primary_button(l.again, tr(lang, Str::Again));
 }
 
-ButtonSpec over_menu_button(const OverLayout& l)
+ButtonSpec over_menu_button(const OverLayout& l, Lang lang)
 {
-    return secondary_button(l.menu, "Menu");
+    return secondary_button(l.menu, tr(lang, Str::Menu));
 }
 
-ButtonSpec pause_resume_button(const PauseLayout& l)
+ButtonSpec pause_resume_button(const PauseLayout& l, Lang lang)
 {
-    return primary_button(l.resume, "Resume");
+    return primary_button(l.resume, tr(lang, Str::Resume));
 }
 
-ButtonSpec pause_menu_button(const PauseLayout& l)
+ButtonSpec pause_menu_button(const PauseLayout& l, Lang lang)
 {
-    return secondary_button(l.menu, "Menu");
+    return secondary_button(l.menu, tr(lang, Str::Menu));
 }
 
 void draw_game_over(Gfx& g, const OverView& v)
 {
     draw_dimmed_base(g, v.board, v.score);
-    OverLayout l = over_layout(g, v.new_best, v.rescues_left > 0);
+    OverLayout l = over_layout(g, v.new_best, v.rescues_left > 0, v.lang);
     draw_sprite(g, panel_sprite(g, l.panel.h), l.panel.x, l.panel.y);
-    draw_text_in_line(g, "No moves left", kTitleStyle, kContentX, l.title_top, kTitleLine, palette::kPanelTitle);
+    draw_text_in_line(g, tr(v.lang, Str::NoMovesLeft), kTitleStyle, kContentX, l.title_top, kTitleLine, palette::kPanelTitle);
     draw_text_in_line(g, format_number(v.score), kScoreStyle, kContentX, l.score_top, 96, palette::kInk);
     float n = normal_line_height(g, kChipStyle);
     if (v.new_best) {
         RaisedSpec chip{l.chip.w, l.chip.h, 12, 3, palette::kPersimmonFace, palette::kPersimmonEdge};
         draw_sprite(g, raised_sprite(g, chip), l.chip.x, l.chip.y);
-        draw_text_in_line(g, "New best", kChipStyle, l.chip.x + 14, l.chip.y + 8, n, palette::kInk);
+        draw_text_in_line(g, tr(v.lang, Str::NewBest), kChipStyle, l.chip.x + 14, l.chip.y + 8, n, palette::kInk);
     }
-    std::string line = (v.new_best ? "Previous best " : "Best ") + format_number(v.previous_best);
+    std::string line = std::string(tr(v.lang, v.new_best ? Str::PreviousBest : Str::Best)) + " " +
+                       format_number(v.previous_best);
     draw_text_in_line(g, line, kLineStyle, kContentX, l.line_top, normal_line_height(g, kLineStyle),
                       palette::kPanelText);
     if (v.rescues_left > 0) {
-        draw_button(g, over_rescue_button(l, v.rescues_left), v.pressed == 2, false);
+        draw_button(g, over_rescue_button(l, v.rescues_left, v.lang), v.pressed == 2, false);
     }
-    draw_button(g, over_again_button(l), v.pressed == 0, false);
-    draw_button(g, over_menu_button(l), v.pressed == 1, false);
+    draw_button(g, over_again_button(l, v.lang), v.pressed == 0, false);
+    draw_button(g, over_menu_button(l, v.lang), v.pressed == 1, false);
 }
 
 void draw_pause(Gfx& g, const PauseView& v)
@@ -139,9 +141,9 @@ void draw_pause(Gfx& g, const PauseView& v)
     draw_dimmed_base(g, v.board, v.score);
     PauseLayout l = pause_layout();
     draw_sprite(g, panel_sprite(g, l.panel.h), l.panel.x, l.panel.y);
-    draw_text_in_line(g, "Paused", kTitleStyle, kContentX, l.title_top, kTitleLine, palette::kPanelTitle);
-    draw_button(g, pause_resume_button(l), v.pressed == 0, false);
-    draw_button(g, pause_menu_button(l), v.pressed == 1, false);
+    draw_text_in_line(g, tr(v.lang, Str::Paused), kTitleStyle, kContentX, l.title_top, kTitleLine, palette::kPanelTitle);
+    draw_button(g, pause_resume_button(l, v.lang), v.pressed == 0, false);
+    draw_button(g, pause_menu_button(l, v.lang), v.pressed == 1, false);
 }
 
 bool warm_step(Gfx& g, int step)

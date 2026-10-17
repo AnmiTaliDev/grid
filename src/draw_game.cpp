@@ -93,7 +93,7 @@ void draw_popup(Gfx& g, const GameView& v)
     draw_text(g, gain, big, 270 - w / 2, baseline + 6, palette::kSaffronEdge, alpha);
     draw_text(g, gain, big, 270 - w / 2, baseline, palette::kSaffronFace, alpha);
     TextStyle label{22, 600};
-    std::string text = v.popup_lines == 1 ? "1 line" : std::to_string(v.popup_lines) + " lines";
+    std::string text = lines_text(v.lang, v.popup_lines);
     float lw = text_width(g, text, label);
     draw_text_in_line(g, text, label, 270 - lw / 2, 354 + rise, normal_line_height(g, label), palette::kBone,
                       alpha);
@@ -155,7 +155,7 @@ void draw_bottom_bar(Gfx& g, const GameView& v)
         RaisedSpec spec{kUndoW, kBottomH - 4, 14, 3, palette::kButtonFace, palette::kBedEdge, v.undo_pressed && usable};
         float alpha = usable ? 1.0f : 0.4f;
         draw_sprite(g, raised_sprite(g, spec), kUndoX, kBottomY, alpha);
-        std::string label = "Undo (" + std::to_string(v.undos_left) + ")";
+        std::string label = std::string(tr(v.lang, Str::Undo)) + " (" + std::to_string(v.undos_left) + ")";
         Rect box = {kUndoX, kBottomY + (v.undo_pressed && usable ? 3.0f : 0.0f), kUndoW, kBottomH - 4};
         draw_text_centered(g, label, {16, 600}, box, palette::kBone, alpha);
     }
@@ -163,7 +163,7 @@ void draw_bottom_bar(Gfx& g, const GameView& v)
         draw_sprite(g, small_slot_sprite(g, kHoldW, kBottomH), kHoldX, kBottomY);
         bool away = v.hand_slot == kTraySize || v.return_slot == kTraySize;
         if (v.hold < 0 || away) {
-            draw_text_centered(g, "Hold", {15, 600}, {kHoldX, kBottomY, kHoldW, kBottomH}, palette::kDim,
+            draw_text_centered(g, tr(v.lang, Str::Hold), {15, 600}, {kHoldX, kBottomY, kHoldW, kBottomH}, palette::kDim,
                                away && v.hold >= 0 ? 0.0f : 1.0f);
         } else {
             const Piece& piece = piece_list()[v.hold];
@@ -179,25 +179,26 @@ void draw_bottom_bar(Gfx& g, const GameView& v)
     }
 }
 
-void draw_best_row(Gfx& g, int best)
+void draw_best_row(Gfx& g, int best, Lang lang)
 {
+    std::string word = tr(lang, Str::Best);
     TextStyle label{15, 500};
     TextStyle number{20, 700};
     std::string num = format_number(best);
-    float wl = text_width(g, "Best", label);
+    float wl = text_width(g, word, label);
     float wn = text_width(g, num, number);
     float left = 512 - (wl + 10 + wn);
     float baseline = baseline_for_line(g, number, 38, normal_line_height(g, number));
-    draw_text(g, "Best", label, left, baseline, palette::kDim);
+    draw_text(g, word, label, left, baseline, palette::kDim);
     draw_text(g, num, number, left + wl + 10, baseline, palette::kBone);
 }
 
-void draw_streak_chip(Gfx& g, int streak)
+void draw_streak_chip(Gfx& g, int streak, Lang lang)
 {
     RaisedSpec spec{76, 76, 18, 4, palette::kSaffronFace, palette::kSaffronEdge};
     draw_sprite(g, raised_sprite(g, spec), 436, 104);
     draw_text_centered_x(g, "\xC3\x97" + std::to_string(streak), {32, 800}, 474, 118.2f, 32, palette::kInk);
-    draw_text_centered_x(g, "streak", {13, 600}, 474, 150.2f, 15.6f, palette::kInk);
+    draw_text_centered_x(g, tr(lang, Str::Streak), {13, 600}, 474, 150.2f, 15.6f, palette::kInk);
 }
 
 }
@@ -212,10 +213,10 @@ void draw_game(Gfx& g, const GameView& v)
 {
     fill_rect(g, {0, 0, kScreenW, kScreenH}, palette::kNight);
     draw_sprite(g, pause_button_sprite(g, v.pause_pressed), 28, 28);
-    draw_best_row(g, v.best);
+    draw_best_row(g, v.best, v.lang);
     draw_header_score(g, v.score, 1.0f);
     if (v.streak >= 2) {
-        draw_streak_chip(g, v.streak);
+        draw_streak_chip(g, v.streak, v.lang);
     }
     draw_sprite(g, bed_sprite(g, false, v.board.size), bed_x(v.board.size), kBedY);
     const Piece* hand = nullptr;

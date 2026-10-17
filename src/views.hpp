@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #include "bests.hpp"
+#include "i18n.hpp"
 #include "board.hpp"
 #include "deal.hpp"
 #include "stats.hpp"
@@ -23,6 +24,7 @@ enum MenuButton {
 };
 
 struct MenuView {
+    Lang lang = Lang::English;
     int best = 0;
     int best_size = 8;
     bool has_save = false;
@@ -31,6 +33,7 @@ struct MenuView {
 };
 
 struct GameView {
+    Lang lang = Lang::English;
     Board board;
     uint64_t bone_mask = 0;
     float bone_ms = 0;
@@ -65,6 +68,7 @@ inline int view_piece(const GameView& v, int slot)
 }
 
 struct OverView {
+    Lang lang = Lang::English;
     Board board;
     int score = 0;
     int previous_best = 0;
@@ -74,6 +78,7 @@ struct OverView {
 };
 
 struct SettingsView {
+    Lang lang = Lang::English;
     int grid = 8;
     int lift = 100;
     int rescues = 1;
@@ -90,23 +95,27 @@ struct SettingsView {
 };
 
 struct StatsView {
+    Lang lang = Lang::English;
     Stats stats;
     Bests bests;
     int pressed = -1;
 };
 
 struct TutorialView {
+    Lang lang = Lang::English;
     int page = 0;
     float seconds = 0;
     int pressed = -1;
 };
 
 struct PiecesView {
+    Lang lang = Lang::English;
     uint32_t shapes = 0;
     int pressed = -1;
 };
 
 struct PauseView {
+    Lang lang = Lang::English;
     Board board;
     int score = 0;
     int pressed = -1;

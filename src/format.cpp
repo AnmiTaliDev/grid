@@ -19,23 +19,29 @@ std::string format_number(int value)
     return out;
 }
 
-std::string format_duration(int64_t seconds)
+std::string format_duration(int64_t seconds, Lang lang)
 {
     if (seconds < 0) {
         seconds = 0;
     }
+    std::string h = tr(lang, Str::UnitHour);
+    std::string m = tr(lang, Str::UnitMinute);
+    std::string s = tr(lang, Str::UnitSecond);
+    bool ru = lang == Lang::Russian;
+    std::string gap = ru ? " " : "";
     int64_t hours = seconds / 3600;
     int64_t minutes = seconds % 3600 / 60;
     int64_t secs = seconds % 60;
+    char buf[64];
     if (hours > 0) {
-        char buf[32];
-        std::snprintf(buf, sizeof(buf), "%lldh %02lldm", static_cast<long long>(hours), static_cast<long long>(minutes));
+        std::snprintf(buf, sizeof(buf), "%lld%s%s %02lld%s%s", static_cast<long long>(hours), gap.c_str(), h.c_str(),
+                      static_cast<long long>(minutes), gap.c_str(), m.c_str());
         return buf;
     }
     if (minutes > 0) {
-        char buf[32];
-        std::snprintf(buf, sizeof(buf), "%lldm %02llds", static_cast<long long>(minutes), static_cast<long long>(secs));
+        std::snprintf(buf, sizeof(buf), "%lld%s%s %02lld%s%s", static_cast<long long>(minutes), gap.c_str(),
+                      m.c_str(), static_cast<long long>(secs), gap.c_str(), s.c_str());
         return buf;
     }
-    return std::to_string(secs) + "s";
+    return std::to_string(secs) + gap + s;
 }

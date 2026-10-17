@@ -41,6 +41,7 @@ add_library(grid_logic STATIC
     src/pulses.cpp
     src/stats.cpp
     src/tutorial.cpp
+    src/i18n.cpp
     src/mixer.cpp
 )
 target_include_directories(grid_logic PUBLIC src)

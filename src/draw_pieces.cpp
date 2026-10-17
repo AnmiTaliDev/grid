@@ -38,9 +38,9 @@ PiecesLayout pieces_layout()
     return l;
 }
 
-ButtonSpec pieces_back_button(const PiecesLayout& l)
+ButtonSpec pieces_back_button(const PiecesLayout& l, Lang lang)
 {
-    return {l.back, 16, 4, palette::kNight, palette::kPanelPrimaryEdge, "Back", {24, 800}, palette::kBone};
+    return {l.back, 16, 4, palette::kNight, palette::kPanelPrimaryEdge, tr(lang, Str::Back), {24, 800}, palette::kBone};
 }
 
 void draw_pieces(Gfx& g, const PiecesView& v)
@@ -48,7 +48,7 @@ void draw_pieces(Gfx& g, const PiecesView& v)
     draw_backdrop(g);
     PiecesLayout l = pieces_layout();
     draw_sprite(g, panel_sprite(g, l.panel.h), l.panel.x, l.panel.y);
-    draw_text_in_line(g, "Pieces", {28, 700}, kContentX, l.title_top, kTitleLine, palette::kPanelTitle);
+    draw_text_in_line(g, tr(v.lang, Str::PiecesTitle), {28, 700}, kContentX, l.title_top, kTitleLine, palette::kPanelTitle);
     for (int i = 0; i < l.count; i++) {
         bool on = v.shapes >> i & 1;
         const Rect& r = l.card[i];
@@ -65,5 +65,5 @@ void draw_pieces(Gfx& g, const PiecesView& v)
                         oy + kPitch * static_cast<float>(c.row), on ? 1.0f : 0.3f);
         }
     }
-    draw_button(g, pieces_back_button(l), v.pressed == l.count, false);
+    draw_button(g, pieces_back_button(l, v.lang), v.pressed == l.count, false);
 }

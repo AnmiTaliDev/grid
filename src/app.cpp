@@ -196,6 +196,9 @@ void go_menu(App& app)
 
 void sync_view(App& app)
 {
+    Lang lang = lang_from_index(app.settings.lang);
+    app.menu.lang = lang;
+    app.view.lang = lang;
     app.view.board = app.game.board;
     app.view.tray = app.game.tray;
     app.view.hold = app.game.hold;
@@ -388,6 +391,8 @@ void settings_activate(App& app, int hit)
         if (app.settings.vibration) {
             haptics_pulse(pulse_for(Sound::Rescue));
         }
+    } else if (id == kSettingLanguage) {
+        app.settings.lang = next_language(app.settings.lang);
     } else if (id == kSettingSound) {
         app.settings.volume = next_volume(app.settings.volume);
         audio_set_volume(app.audio, app.settings.volume);
@@ -779,29 +784,34 @@ void app_draw(App& app, Gfx& g)
         draw_game(g, app.view);
     } else if (app.screen == Screen::Pause) {
         PauseView pv;
+        pv.lang = lang_from_index(app.settings.lang);
         pv.board = app.game.board;
         pv.score = app.game.score.score;
         pv.pressed = app.panel_pressed;
         draw_pause(g, pv);
     } else if (app.screen == Screen::Tutorial) {
         TutorialView tv;
+        tv.lang = lang_from_index(app.settings.lang);
         tv.page = app.tutorial_page;
         tv.seconds = app.tutorial_ms / 1000.0f;
         tv.pressed = app.panel_pressed;
         draw_tutorial(g, tv);
     } else if (app.screen == Screen::Stats) {
         StatsView sv;
+        sv.lang = lang_from_index(app.settings.lang);
         sv.stats = app.stats;
         sv.bests = app.bests;
         sv.pressed = app.panel_pressed;
         draw_stats(g, sv);
     } else if (app.screen == Screen::Pieces) {
         PiecesView pv;
+        pv.lang = lang_from_index(app.settings.lang);
         pv.shapes = app.settings.shapes;
         pv.pressed = app.panel_pressed;
         draw_pieces(g, pv);
     } else if (app.screen == Screen::Settings) {
         SettingsView sv;
+        sv.lang = lang_from_index(app.settings.lang);
         sv.grid = app.settings.grid;
         sv.lift = app.settings.lift;
         sv.rescues = app.settings.rescues;
@@ -818,6 +828,7 @@ void app_draw(App& app, Gfx& g)
         draw_settings(g, sv);
     } else {
         OverView ov;
+        ov.lang = lang_from_index(app.settings.lang);
         ov.board = app.game.board;
         ov.score = app.game.score.score;
         ov.previous_best = app.previous_best;

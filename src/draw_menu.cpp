@@ -27,25 +27,25 @@ const WordCell kWordmark[] = {
 
 }
 
-ButtonSpec menu_button(int which)
+ButtonSpec menu_button(int which, Lang lang)
 {
     if (which == kMenuPlay) {
-        return {{80, 544, 380, 60}, 14, 4, palette::kBone, palette::kBoneEdge, "Play", {26, 800, -0.26f},
+        return {{80, 544, 380, 60}, 14, 4, palette::kBone, palette::kBoneEdge, tr(lang, Str::Play), {26, 800, -0.26f},
                 palette::kInk, true};
     }
     if (which == kMenuSettings) {
-        return {{80, 640, 120, 60}, 14, 4, palette::kButtonFace, palette::kBedEdge, "Settings", {17, 600},
+        return {{80, 640, 120, 60}, 14, 4, palette::kButtonFace, palette::kBedEdge, tr(lang, Str::Settings), {17, 600},
                 palette::kBone};
     }
     if (which == kMenuContinue) {
-        return {{80, 464, 380, 60}, 14, 4, palette::kButtonFace, palette::kBedEdge, "Continue", {22, 700},
+        return {{80, 464, 380, 60}, 14, 4, palette::kButtonFace, palette::kBedEdge, tr(lang, Str::Continue), {22, 700},
                 palette::kBone};
     }
     if (which == kMenuStats) {
-        return {{210, 640, 120, 60}, 14, 4, palette::kButtonFace, palette::kBedEdge, "Stats", {17, 600},
+        return {{210, 640, 120, 60}, 14, 4, palette::kButtonFace, palette::kBedEdge, tr(lang, Str::Stats), {17, 600},
                 palette::kBone};
     }
-    return {{340, 640, 120, 60}, 14, 4, palette::kButtonFace, palette::kBedEdge, "Quit", {17, 600}, palette::kBone};
+    return {{340, 640, 120, 60}, 14, 4, palette::kButtonFace, palette::kBedEdge, tr(lang, Str::Quit), {17, 600}, palette::kBone};
 }
 
 void draw_backdrop(Gfx& g)
@@ -69,14 +69,14 @@ void draw_menu(Gfx& g, const MenuView& v)
                     static_cast<float>(224 + 32 * w.row));
     }
     for (int i = 0; i < 3; i++) {
-        draw_button(g, menu_button(i), v.pressed == i, v.focus == i);
+        draw_button(g, menu_button(i, v.lang), v.pressed == i, v.focus == i);
     }
-    draw_button(g, menu_button(kMenuStats), v.pressed == kMenuStats, v.focus == kMenuStats);
+    draw_button(g, menu_button(kMenuStats, v.lang), v.pressed == kMenuStats, v.focus == kMenuStats);
     if (v.has_save) {
-        draw_button(g, menu_button(kMenuContinue), v.pressed == kMenuContinue, v.focus == kMenuContinue);
+        draw_button(g, menu_button(kMenuContinue, v.lang), v.pressed == kMenuContinue, v.focus == kMenuContinue);
     }
     TextStyle best{15, 500};
     std::string size = std::to_string(v.best_size) + "x" + std::to_string(v.best_size);
-    std::string text = "Best " + size + "\xC2\xA0\xC2\xA0" + format_number(v.best);
+    std::string text = std::string(tr(v.lang, Str::Best)) + " " + size + "\xC2\xA0\xC2\xA0" + format_number(v.best);
     draw_text_centered_x(g, text, best, 270, 768, normal_line_height(g, best), palette::kDim);
 }

@@ -22,14 +22,15 @@ struct Row {
 std::vector<Row> make_rows(const StatsView& v)
 {
     std::vector<Row> rows;
-    rows.push_back({"Games played", format_number(v.stats.games)});
-    rows.push_back({"Average score", format_number(stats_average(v.stats))});
-    rows.push_back({"Longest streak", format_number(v.stats.best_streak)});
-    rows.push_back({"Lines cleared", format_number(v.stats.lines)});
-    rows.push_back({"Pieces placed", format_number(v.stats.pieces)});
-    rows.push_back({"Time played", format_duration(v.stats.seconds)});
+    Lang lang = v.lang;
+    rows.push_back({tr(lang, Str::GamesPlayed), format_number(v.stats.games)});
+    rows.push_back({tr(lang, Str::AverageScore), format_number(stats_average(v.stats))});
+    rows.push_back({tr(lang, Str::LongestStreak), format_number(v.stats.best_streak)});
+    rows.push_back({tr(lang, Str::LinesCleared), format_number(v.stats.lines)});
+    rows.push_back({tr(lang, Str::PiecesPlaced), format_number(v.stats.pieces)});
+    rows.push_back({tr(lang, Str::TimePlayed), format_duration(v.stats.seconds, lang)});
     for (int size = 6; size <= 8; size++) {
-        std::string name = "Best " + std::to_string(size) + "x" + std::to_string(size);
+        std::string name = std::string(tr(lang, Str::Best)) + " " + std::to_string(size) + "x" + std::to_string(size);
         rows.push_back({name, format_number(v.bests.get(size))});
     }
     return rows;
@@ -51,9 +52,9 @@ StatsLayout stats_layout()
     return l;
 }
 
-ButtonSpec stats_back_button(const StatsLayout& l)
+ButtonSpec stats_back_button(const StatsLayout& l, Lang lang)
 {
-    return {l.back, 16, 4, palette::kNight, palette::kPanelPrimaryEdge, "Back", {24, 800}, palette::kBone};
+    return {l.back, 16, 4, palette::kNight, palette::kPanelPrimaryEdge, tr(lang, Str::Back), {24, 800}, palette::kBone};
 }
 
 void draw_stats(Gfx& g, const StatsView& v)
@@ -61,7 +62,7 @@ void draw_stats(Gfx& g, const StatsView& v)
     draw_backdrop(g);
     StatsLayout l = stats_layout();
     draw_sprite(g, panel_sprite(g, l.panel.h), l.panel.x, l.panel.y);
-    draw_text_in_line(g, "Statistics", {28, 700}, kContentX, l.title_top, kTitleLine, palette::kPanelTitle);
+    draw_text_in_line(g, tr(v.lang, Str::StatsTitle), {28, 700}, kContentX, l.title_top, kTitleLine, palette::kPanelTitle);
     std::vector<Row> rows = make_rows(v);
     TextStyle label{16, 500};
     TextStyle value{18, 700};
@@ -76,5 +77,5 @@ void draw_stats(Gfx& g, const StatsView& v)
             fill_rect(g, {kContentX, y + l.row_height - 1, kContentW, 1}, with_alpha(palette::kPanelText, 0.18f));
         }
     }
-    draw_button(g, stats_back_button(l), v.pressed == 0, false);
+    draw_button(g, stats_back_button(l, v.lang), v.pressed == 0, false);
 }
