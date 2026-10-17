@@ -36,7 +36,7 @@ jobs:
             libdbus-1-dev libibus-1.0-dev libudev-dev libpipewire-0.3-dev libwayland-dev libdecor-0-dev liburing-dev
       - name: Configure
         run: >
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           -DSDL3_SOURCE_DIR=$PWD/deps/SDL -DSDL3_TTF_SOURCE_DIR=$PWD/deps/SDL_ttf
       - name: Build
         run: cmake --build build

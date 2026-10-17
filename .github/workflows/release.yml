@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 # SPDX-License-Identifier: GPL-3.0-only
-name: Debug builds
+name: Builds
 
 on:
   push:
@@ -39,12 +39,12 @@ jobs:
       - name: Build
         run: |
           VERSION="$(echo "${GITHUB_REF_NAME#v}" | tr '-' '~')"
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DGRID_VERSION="$VERSION" \
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DGRID_VERSION="$VERSION" \
             -DSDL3_SOURCE_DIR=$PWD/deps/SDL -DSDL3_TTF_SOURCE_DIR=$PWD/deps/SDL_ttf
           cmake --build build --target grid
       - name: Package archive
         run: |
-          NAME="Grid-${GITHUB_REF_NAME}-linux-x86_64-debug"
+          NAME="Grid-${GITHUB_REF_NAME}-linux-x86_64"
           mkdir -p "dist/$NAME"
           cp build/grid "dist/$NAME/"
           cp -r assets "dist/$NAME/"
@@ -56,7 +56,7 @@ jobs:
           sudo apt-get install -y rpm dpkg-dev
           mkdir -p dist-pkgs
           (cd build && cpack --config CPackConfig.cmake -B "$GITHUB_WORKSPACE/dist-pkgs")
-          DESTDIR="$PWD/stage" cmake --install build --prefix /usr
+          DESTDIR="$PWD/stage" cmake --install build --strip --prefix /usr
           tar -C stage -czf arch-stage.tar.gz usr
       - uses: actions/upload-artifact@v4
         with:
@@ -119,13 +119,13 @@ jobs:
         run: |
           cmake -S . -B build \
             -DSDL3_SOURCE_DIR="$PWD/deps/SDL" -DSDL3_TTF_SOURCE_DIR="$PWD/deps/SDL_ttf"
-          cmake --build build --config Debug --target grid
+          cmake --build build --config Release --target grid
       - name: Package
         shell: bash
         run: |
-          NAME="Grid-${GITHUB_REF_NAME}-windows-x64-debug"
+          NAME="Grid-${GITHUB_REF_NAME}-windows-x64"
           mkdir -p "dist/$NAME"
-          cp build/Debug/grid.exe "dist/$NAME/"
+          cp build/Release/grid.exe "dist/$NAME/"
           cp -r assets "dist/$NAME/"
           cp LICENSE "dist/$NAME/"
           cd dist
@@ -153,12 +153,12 @@ jobs:
           submodules: recursive
       - name: Build
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug \
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
             -DSDL3_SOURCE_DIR="$PWD/deps/SDL" -DSDL3_TTF_SOURCE_DIR="$PWD/deps/SDL_ttf"
           cmake --build build --target grid
       - name: Package
         run: |
-          NAME="Grid-${GITHUB_REF_NAME}-macos-debug"
+          NAME="Grid-${GITHUB_REF_NAME}-macos"
           mkdir -p "dist/$NAME"
           cp build/grid "dist/$NAME/"
           cp -r assets "dist/$NAME/"
