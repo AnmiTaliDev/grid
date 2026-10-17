@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 // SPDX-License-Identifier: GPL-3.0-only
 #include "draw.hpp"
+#include "haptics.hpp"
 
 namespace {
 
@@ -29,6 +30,9 @@ SettingsLayout settings_layout()
     l.id[l.count++] = kSettingUndo;
     l.id[l.count++] = kSettingHold;
     l.id[l.count++] = kSettingSound;
+    if (haptics_supported()) {
+        l.id[l.count++] = kSettingVibration;
+    }
     l.id[l.count++] = kSettingReset;
     float n = static_cast<float>(l.count);
     float h = 36 + kTitleLine + 24 + n * 56 + (n - 1) * 14 + 28 + 64 + 36;
@@ -58,6 +62,9 @@ std::string settings_label(const SettingsView& v, int id)
     if (id == kSettingDeal) {
         const char* names[3] = {"random", "fitting", "dynamic"};
         return std::string("Deal: ") + names[v.deal];
+    }
+    if (id == kSettingVibration) {
+        return v.vibration ? "Vibration: on" : "Vibration: off";
     }
     if (id == kSettingSound) {
         return v.volume == 0 ? "Sound: off" : "Sound: " + std::to_string(v.volume) + "%";

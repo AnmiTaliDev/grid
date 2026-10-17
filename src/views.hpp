@@ -77,6 +77,7 @@ struct SettingsView {
     int undos = 1;
     bool hold = true;
     int volume = 70;
+    bool vibration = true;
     int deal = 0;
     int shapes_on = 0;
     int shapes_total = 0;

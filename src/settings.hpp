@@ -18,6 +18,7 @@ enum SettingId {
     kSettingUndo,
     kSettingHold,
     kSettingSound,
+    kSettingVibration,
     kSettingDeal,
     kSettingPieces,
     kSettingReset,
@@ -32,6 +33,7 @@ struct Settings {
     int undos = 1;
     bool hold = true;
     int volume = 70;
+    bool vibration = true;
     int deal = 0;
     uint32_t shapes = 0;
     bool fullscreen = false;

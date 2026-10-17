@@ -6,6 +6,7 @@
 
 #include "draw.hpp"
 #include "drop.hpp"
+#include "haptics.hpp"
 #include "layout.hpp"
 #include "piece.hpp"
 #include "settings.hpp"
@@ -46,6 +47,17 @@ void bar_click(App& app, float x, float y)
 void sfx(App& app, Sound sound)
 {
     audio_play(app.audio, sound);
+    if (app.settings.vibration && sound != Sound::Click && sound != Sound::Pick) {
+        haptics_pulse(pulse_for(sound));
+    }
+}
+
+void sfx_clear(App& app, int lines, int streak)
+{
+    audio_play_clear(app.audio, lines, streak);
+    if (app.settings.vibration) {
+        haptics_pulse(pulse_for_clear(lines, streak));
+    }
 }
 
 void persist_game(App& app)
@@ -228,7 +240,7 @@ void play_down(App& app, float x, float y)
 void finish_move(App& app, const MoveResult& result)
 {
     if (result.lines > 0) {
-        audio_play_clear(app.audio, result.lines, app.game.score.streak);
+        sfx_clear(app, result.lines, app.game.score.streak);
     } else {
         sfx(app, Sound::Place);
     }
@@ -349,6 +361,11 @@ void settings_activate(App& app, int hit)
         app.screen = Screen::Pieces;
     } else if (id == kSettingDeal) {
         app.settings.deal = next_deal(app.settings.deal);
+    } else if (id == kSettingVibration) {
+        app.settings.vibration = !app.settings.vibration;
+        if (app.settings.vibration) {
+            haptics_pulse(pulse_for(Sound::Rescue));
+        }
     } else if (id == kSettingSound) {
         app.settings.volume = next_volume(app.settings.volume);
         audio_set_volume(app.audio, app.settings.volume);
@@ -695,6 +712,8 @@ void app_draw(App& app, Gfx& g)
         sv.rescues = app.settings.rescues;
         sv.undos = app.settings.undos;
         sv.hold = app.settings.hold;
+        sv.volume = app.settings.volume;
+        sv.vibration = app.settings.vibration;
         sv.deal = app.settings.deal;
         sv.shapes_on = __builtin_popcount(app.settings.shapes);
         sv.shapes_total = shape_count();

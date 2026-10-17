@@ -38,6 +38,7 @@ add_library(grid_logic STATIC
     src/serialize.cpp
     src/bests.cpp
     src/sound_names.cpp
+    src/pulses.cpp
     src/mixer.cpp
 )
 target_include_directories(grid_logic PUBLIC src)
@@ -64,6 +65,7 @@ add_library(grid_render STATIC
     src/settings.cpp
     src/audio.cpp
     src/assets.cpp
+    src/haptics.cpp
 )
 target_link_libraries(grid_render PUBLIC grid_logic SDL3::SDL3 SDL3_ttf::SDL3_ttf)
 

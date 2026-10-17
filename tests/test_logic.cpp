@@ -11,6 +11,7 @@
 #include "bests.hpp"
 #include "game.hpp"
 #include "mixer.hpp"
+#include "pulses.hpp"
 #include "serialize.hpp"
 #include "synth.hpp"
 
@@ -548,6 +549,27 @@ void test_synth_and_mixer()
     assert(m.voices.size() == kMaxVoices);
 }
 
+void test_pulses()
+{
+    for (int i = 0; i < static_cast<int>(Sound::Count); i++) {
+        Pulse p = pulse_for(static_cast<Sound>(i));
+        assert(p.ms >= 5 && p.ms <= 200 && p.amplitude >= 1 && p.amplitude <= 255);
+    }
+    int last_ms = 0;
+    for (int lines = 1; lines <= kMaxClearLines + 2; lines++) {
+        Pulse p = pulse_for_clear(lines, 1);
+        assert(p.amplitude >= 1 && p.amplitude <= 255);
+        assert(p.ms >= last_ms);
+        last_ms = p.ms;
+    }
+    for (int streak = 0; streak <= 12; streak++) {
+        Pulse p = pulse_for_clear(3, streak);
+        assert(p.ms > 0 && p.amplitude >= 1 && p.amplitude <= 255);
+    }
+    assert(pulse_for_clear(4, 4).amplitude > pulse_for_clear(1, 1).amplitude);
+    assert(pulse_for(Sound::GameOver).ms > pulse_for(Sound::Place).ms);
+}
+
 void test_tray_refill()
 {
     Game game;
@@ -626,6 +648,7 @@ int main()
     test_hold();
     test_hold_ends_game_correctly();
     test_synth_and_mixer();
+    test_pulses();
     test_tray_refill();
     test_deal_fairness();
     test_score_and_streak();
