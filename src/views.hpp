@@ -35,6 +35,12 @@ struct GameView {
     int best = 0;
     int streak = 0;
     Tray tray{-1, -1, -1};
+    int hold = -1;
+    bool hold_enabled = false;
+    int undos_left = 0;
+    bool undo_enabled = false;
+    bool undo_available = false;
+    bool undo_pressed = false;
     int hand_slot = -1;
     float pointer_x = 0;
     float pointer_y = 0;
@@ -46,6 +52,14 @@ struct GameView {
     float popup_ms = 0;
     bool pause_pressed = false;
 };
+
+inline int view_piece(const GameView& v, int slot)
+{
+    if (slot == kTraySize) {
+        return v.hold;
+    }
+    return slot >= 0 && slot < kTraySize ? v.tray[slot] : -1;
+}
 
 struct OverView {
     Board board;
@@ -60,6 +74,8 @@ struct SettingsView {
     int grid = 8;
     int lift = 100;
     int rescues = 1;
+    int undos = 1;
+    bool hold = true;
     int deal = 0;
     int shapes_on = 0;
     int shapes_total = 0;

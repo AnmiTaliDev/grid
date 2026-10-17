@@ -16,6 +16,9 @@ namespace {
 
 constexpr float kOverDelayMs = 400.0f;
 constexpr Rect kPauseButton = {28, 28, 48, 48};
+constexpr Rect kUndoButton = {kUndoX, kBottomY, kUndoW, kBottomH};
+constexpr Rect kHoldRect = {kHoldX, kBottomY, kHoldW, kBottomH};
+constexpr float kHoldReach = 24.0f;
 
 bool inside(Rect r, float x, float y)
 {
@@ -73,6 +76,9 @@ void start_game(App& app)
     options.allowed = pieces_for_shapes(app.settings.shapes);
     game_start(app.game, static_cast<uint32_t>(SDL_GetTicksNS()), options);
     app.previous_best = app.bests.get(app.settings.grid);
+    app.undos_left = app.settings.undos;
+    app.has_undo = false;
+    app.undo_pressed = false;
     drop_saved_game(app);
     app.view = GameView{};
     app.over_pending = false;
@@ -82,6 +88,7 @@ void start_game(App& app)
 void rescue_game(App& app)
 {
     if (game_rescue(app.game)) {
+        app.has_undo = false;
         app.view = GameView{};
         app.over_pending = false;
         app.screen = Screen::Play;
@@ -105,6 +112,9 @@ void continue_game(App& app)
     }
     app.view = GameView{};
     app.over_pending = false;
+    app.undos_left = app.settings.undos;
+    app.has_undo = false;
+    app.undo_pressed = false;
     app.screen = Screen::Play;
 }
 
@@ -151,6 +161,12 @@ void sync_view(App& app)
 {
     app.view.board = app.game.board;
     app.view.tray = app.game.tray;
+    app.view.hold = app.game.hold;
+    app.view.hold_enabled = app.settings.hold;
+    app.view.undos_left = app.undos_left;
+    app.view.undo_enabled = app.settings.undos > 0;
+    app.view.undo_available = app.has_undo && !app.over_pending;
+    app.view.undo_pressed = app.undo_pressed;
     app.view.score = app.game.score.score;
     app.view.streak = app.game.score.streak;
     app.view.best = std::max(app.bests.get(app.game.board.size), app.game.score.score);
@@ -175,7 +191,18 @@ void play_down(App& app, float x, float y)
         app.view.pause_pressed = true;
         return;
     }
+    if (app.settings.undos > 0 && inside(kUndoButton, x, y)) {
+        app.undo_pressed = true;
+        return;
+    }
     if (app.game.over) {
+        return;
+    }
+    if (app.settings.hold && app.game.hold >= 0 && inside(kHoldRect, x, y)) {
+        app.view.return_slot = -1;
+        app.view.hand_slot = kTraySize;
+        app.view.pointer_x = x;
+        app.view.pointer_y = y - static_cast<float>(app.settings.lift);
         return;
     }
     for (int i = 0; i < kTraySize; i++) {
@@ -209,8 +236,25 @@ void finish_move(App& app, const MoveResult& result)
     }
 }
 
+void undo_move(App& app)
+{
+    app.game = app.undo_game;
+    app.has_undo = false;
+    app.undos_left--;
+    app.view = GameView{};
+    app.over_pending = false;
+    persist_game(app);
+}
+
 void play_up(App& app, float x, float y)
 {
+    if (app.undo_pressed) {
+        app.undo_pressed = false;
+        if (inside(kUndoButton, x, y) && app.has_undo && app.undos_left > 0 && !app.over_pending) {
+            undo_move(app);
+        }
+        return;
+    }
     if (app.view.pause_pressed) {
         app.view.pause_pressed = false;
         if (inside(kPauseButton, x, y)) {
@@ -225,11 +269,17 @@ void play_up(App& app, float x, float y)
     }
     app.view.pointer_x = x;
     app.view.pointer_y = y - static_cast<float>(app.settings.lift);
-    const Piece& piece = piece_list()[app.game.tray[slot]];
+    const Piece& piece = piece_list()[game_piece_in_slot(app.game, slot)];
     Drop drop = find_drop(app.game.board, piece, app.view.pointer_x, app.view.pointer_y);
     app.view.hand_slot = -1;
+    Rect reach = {kHoldRect.x - kHoldReach, kHoldRect.y - kHoldReach, kHoldRect.w + 2 * kHoldReach,
+                  kHoldRect.h + 2 * kHoldReach};
     if (drop.valid) {
+        app.undo_game = app.game;
+        app.has_undo = true;
         finish_move(app, game_place(app.game, slot, drop.row, drop.col));
+    } else if (app.settings.hold && slot < kTraySize && inside(reach, x, y) && game_swap_hold(app.game, slot)) {
+        persist_game(app);
     } else {
         app.view.return_slot = slot;
         app.view.return_t = 0;
@@ -282,6 +332,10 @@ void settings_activate(App& app, int hit)
         app.screen = Screen::Pieces;
     } else if (id == kSettingDeal) {
         app.settings.deal = next_deal(app.settings.deal);
+    } else if (id == kSettingUndo) {
+        app.settings.undos = next_undos(app.settings.undos);
+    } else if (id == kSettingHold) {
+        app.settings.hold = !app.settings.hold;
     } else if (id == kSettingRescues) {
         app.settings.rescues = next_rescues(app.settings.rescues);
     } else if (id == kSettingFullscreen) {
@@ -612,6 +666,8 @@ void app_draw(App& app, Gfx& g)
         sv.grid = app.settings.grid;
         sv.lift = app.settings.lift;
         sv.rescues = app.settings.rescues;
+        sv.undos = app.settings.undos;
+        sv.hold = app.settings.hold;
         sv.deal = app.settings.deal;
         sv.shapes_on = __builtin_popcount(app.settings.shapes);
         sv.shapes_total = shape_count();

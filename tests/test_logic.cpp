@@ -414,6 +414,80 @@ void test_bests()
     assert(range.get(1) == 0 && range.get(6) == 0 && range.get(8) == 77);
 }
 
+void test_hold()
+{
+    Game game;
+    game_start(game, 14, options(8, 0, 0));
+    int dot = find_piece("dot", 0);
+    int bar2 = find_piece("bar2", 0);
+    int bar3 = find_piece("bar3", 0);
+    game.tray = {dot, bar2, bar3};
+    assert(game.hold == -1);
+    assert(game_swap_hold(game, 1));
+    assert(game.hold == bar2 && game.tray[1] == -1);
+    assert(game_swap_hold(game, 0));
+    assert(game.hold == dot && game.tray[0] == bar2 && game.tray[1] == -1);
+    assert(!game_swap_hold(game, 1));
+    assert(game_piece_in_slot(game, kHoldSlot) == dot);
+    MoveResult r = game_place(game, kHoldSlot, 2, 2);
+    assert(r.ok && game.hold == -1 && game.board.cell[2][2] != 0);
+    assert(game.tray[0] == bar2 && game.tray[2] == bar3);
+    assert(!game_place(game, kHoldSlot, 0, 0).ok);
+    int custom = register_custom_piece({{0, 0}, {1, 0}, {1, 1}}, 2);
+    game.tray = {custom, bar2, -1};
+    assert(!game_swap_hold(game, 0));
+    assert(game_swap_hold(game, 1));
+    assert(game.hold == bar2);
+    assert(!game_swap_hold(game, 0));
+    game.tray = {-1, -1, bar3};
+    game.hold = dot;
+    assert(game_swap_hold(game, 2));
+    assert(game.hold == bar3 && game.tray[2] == dot);
+    game.tray = {-1, -1, dot};
+    game.hold = -1;
+    assert(game_swap_hold(game, 2));
+    bool any = false;
+    for (int index : game.tray) {
+        any = any || index >= 0;
+    }
+    assert(any && game.hold == dot);
+}
+
+void test_hold_ends_game_correctly()
+{
+    Game game;
+    game_start(game, 15, options(8, 0, 0));
+    Board sparse = sparse_board();
+    int dot = find_piece("dot", 0);
+    int bar2 = find_piece("bar2", 0);
+    game.board = sparse;
+    game.tray = {bar2, -1, -1};
+    game.hold = -1;
+    assert(!game_has_move(game));
+    game.hold = dot;
+    assert(game_has_move(game));
+    game.over = false;
+    Game stuck = game;
+    stuck.hold = bar2;
+    assert(!game_has_move(stuck));
+    game.hold = dot;
+    std::string text = serialize_game(game, 3);
+    Game loaded;
+    int previous = 0;
+    assert(deserialize_game(text, loaded, previous));
+    assert(loaded.hold == dot);
+    Game fresh;
+    game_start(fresh, 16, options(8, 0, 0));
+    std::string full = serialize_game(fresh, 3);
+    std::string legacy = full.substr(0, full.find(" hold"));
+    Game old;
+    assert(deserialize_game(legacy + "\n", old, previous));
+    assert(old.hold == -1);
+    std::string bad = full;
+    bad.replace(bad.find(" hold -"), 7, " hold x");
+    assert(!deserialize_game(bad, old, previous));
+}
+
 void test_tray_refill()
 {
     Game game;
@@ -489,6 +563,8 @@ int main()
     test_save_roundtrip();
     test_save_rejects_garbage();
     test_bests();
+    test_hold();
+    test_hold_ends_game_correctly();
     test_tray_refill();
     test_deal_fairness();
     test_score_and_streak();

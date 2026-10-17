@@ -78,6 +78,8 @@ std::string serialize_game(const Game& game, int previous_best)
     for (int index : game.tray) {
         write_tray_entry(out, index);
     }
+    out << " hold";
+    write_tray_entry(out, game.hold);
     out << "\n";
     return out.str();
 }
@@ -127,7 +129,14 @@ bool deserialize_game(const std::string& text, Game& game, int& previous_best)
         }
         any = any || slot >= 0;
     }
-    if (!any || !any_piece_fits(loaded.board, loaded.tray)) {
+    std::string hold_key;
+    if (in >> hold_key) {
+        if (hold_key != "hold" || !read_tray_entry(in, loaded.hold) || loaded.hold >= base_piece_count()) {
+            return false;
+        }
+        any = any || loaded.hold >= 0;
+    }
+    if (!any || !game_has_move(loaded)) {
         return false;
     }
     loaded.score.score = score;

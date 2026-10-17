@@ -111,8 +111,9 @@ void draw_hand(Gfx& g, const Piece& piece, float px, float py)
 void draw_returning(Gfx& g, const Piece& piece, const GameView& v)
 {
     float t = std::clamp(v.return_t, 0.0f, 1.0f);
-    float slot_cx = kTrayXs[v.return_slot] + kTraySlotSize / 2;
-    float slot_cy = kTrayY + kTraySlotSize / 2;
+    bool from_hold = v.return_slot == kTraySize;
+    float slot_cx = from_hold ? kHoldX + kHoldW / 2 : kTrayXs[v.return_slot] + kTraySlotSize / 2;
+    float slot_cy = from_hold ? kBottomY + kBottomH / 2 : kTrayY + kTraySlotSize / 2;
     float cx = v.pointer_x + (slot_cx - v.pointer_x) * t;
     float cy = v.pointer_y + (slot_cy - v.pointer_y) * t;
     float pitch = kCellPitch + (34.0f - kCellPitch) * t;
@@ -143,6 +144,37 @@ void draw_tray(Gfx& g, const GameView& v)
         for (const Cell& c : piece.cells) {
             draw_sprite(g, tile_sprite(g, 30, piece.glaze, false), ox + 34.0f * static_cast<float>(c.col),
                         oy + 34.0f * static_cast<float>(c.row));
+        }
+    }
+}
+
+void draw_bottom_bar(Gfx& g, const GameView& v)
+{
+    if (v.undo_enabled) {
+        bool usable = v.undo_available && v.undos_left > 0;
+        RaisedSpec spec{kUndoW, kBottomH - 4, 14, 3, palette::kButtonFace, palette::kBedEdge, v.undo_pressed && usable};
+        float alpha = usable ? 1.0f : 0.4f;
+        draw_sprite(g, raised_sprite(g, spec), kUndoX, kBottomY, alpha);
+        std::string label = "Undo (" + std::to_string(v.undos_left) + ")";
+        Rect box = {kUndoX, kBottomY + (v.undo_pressed && usable ? 3.0f : 0.0f), kUndoW, kBottomH - 4};
+        draw_text_centered(g, label, {16, 600}, box, palette::kBone, alpha);
+    }
+    if (v.hold_enabled) {
+        draw_sprite(g, small_slot_sprite(g, kHoldW, kBottomH), kHoldX, kBottomY);
+        bool away = v.hand_slot == kTraySize || v.return_slot == kTraySize;
+        if (v.hold < 0 || away) {
+            draw_text_centered(g, "Hold", {15, 600}, {kHoldX, kBottomY, kHoldW, kBottomH}, palette::kDim,
+                               away && v.hold >= 0 ? 0.0f : 1.0f);
+        } else {
+            const Piece& piece = piece_list()[v.hold];
+            float w = 11.0f * static_cast<float>(piece.cols) - 1.0f;
+            float h = 11.0f * static_cast<float>(piece.rows) - 1.0f;
+            float ox = kHoldX + (kHoldW - w) / 2;
+            float oy = kBottomY + (kBottomH - h) / 2;
+            for (const Cell& c : piece.cells) {
+                draw_sprite(g, tile_sprite(g, 10, piece.glaze, false), ox + 11.0f * static_cast<float>(c.col),
+                            oy + 11.0f * static_cast<float>(c.row));
+            }
         }
     }
 }
@@ -188,8 +220,8 @@ void draw_game(Gfx& g, const GameView& v)
     draw_sprite(g, bed_sprite(g, false, v.board.size), bed_x(v.board.size), kBedY);
     const Piece* hand = nullptr;
     Drop drop;
-    if (v.hand_slot >= 0 && v.tray[v.hand_slot] >= 0) {
-        hand = &piece_list()[v.tray[v.hand_slot]];
+    if (v.hand_slot >= 0 && view_piece(v, v.hand_slot) >= 0) {
+        hand = &piece_list()[view_piece(v, v.hand_slot)];
         drop = find_drop(v.board, *hand, v.pointer_x, v.pointer_y);
     }
     draw_cells(g, v, hand, drop);
@@ -201,8 +233,9 @@ void draw_game(Gfx& g, const GameView& v)
     }
     if (hand) {
         draw_hand(g, *hand, v.pointer_x, v.pointer_y);
-    } else if (v.return_slot >= 0 && v.tray[v.return_slot] >= 0) {
-        draw_returning(g, piece_list()[v.tray[v.return_slot]], v);
+    } else if (v.return_slot >= 0 && view_piece(v, v.return_slot) >= 0) {
+        draw_returning(g, piece_list()[view_piece(v, v.return_slot)], v);
     }
     draw_tray(g, v);
+    draw_bottom_bar(g, v);
 }

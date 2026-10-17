@@ -36,6 +36,10 @@ struct App {
     float bar_h = 0;
     Settings settings;
     bool reset_armed = false;
+    Game undo_game;
+    bool has_undo = false;
+    int undos_left = 0;
+    bool undo_pressed = false;
 };
 
 void app_init(App& app, Gfx& g, SDL_Window* window);

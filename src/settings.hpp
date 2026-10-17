@@ -7,12 +7,15 @@
 constexpr int kGridSizes[] = {6, 7, 8};
 constexpr int kHandLifts[] = {0, 60, 100};
 constexpr int kRescueCounts[] = {0, 1, 2, 3};
+constexpr int kUndoCounts[] = {0, 1, 2, 3};
 
 enum SettingId {
     kSettingGrid,
     kSettingLift,
     kSettingFullscreen,
     kSettingRescues,
+    kSettingUndo,
+    kSettingHold,
     kSettingDeal,
     kSettingPieces,
     kSettingReset,
@@ -24,6 +27,8 @@ struct Settings {
     int grid = 8;
     int lift = 100;
     int rescues = 1;
+    int undos = 1;
+    bool hold = true;
     int deal = 0;
     uint32_t shapes = 0;
     bool fullscreen = false;
@@ -33,6 +38,7 @@ bool fullscreen_supported();
 int next_grid(int grid);
 int next_lift(int lift);
 int next_rescues(int rescues);
+int next_undos(int undos);
 int next_deal(int deal);
 Settings load_settings();
 void save_settings(const Settings& settings);

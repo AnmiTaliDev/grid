@@ -12,7 +12,7 @@ constexpr float kTitleLine = 30.8f;
 
 }
 
-static_assert(kSettingsBack > 7, "Back index must not collide with option indices");
+static_assert(kSettingsBack > 9, "Back index must not collide with option indices");
 
 SettingsLayout settings_layout()
 {
@@ -26,6 +26,8 @@ SettingsLayout settings_layout()
     l.id[l.count++] = kSettingDeal;
     l.id[l.count++] = kSettingPieces;
     l.id[l.count++] = kSettingRescues;
+    l.id[l.count++] = kSettingUndo;
+    l.id[l.count++] = kSettingHold;
     l.id[l.count++] = kSettingReset;
     float n = static_cast<float>(l.count);
     float h = 36 + kTitleLine + 24 + n * 56 + (n - 1) * 14 + 28 + 64 + 36;
@@ -55,6 +57,12 @@ std::string settings_label(const SettingsView& v, int id)
     if (id == kSettingDeal) {
         const char* names[3] = {"random", "fitting", "dynamic"};
         return std::string("Deal: ") + names[v.deal];
+    }
+    if (id == kSettingUndo) {
+        return v.undos == 0 ? "Undo: off" : "Undo: " + std::to_string(v.undos);
+    }
+    if (id == kSettingHold) {
+        return v.hold ? "Hold: on" : "Hold: off";
     }
     if (id == kSettingRescues) {
         return v.rescues == 0 ? "Rescues: off" : "Rescues: " + std::to_string(v.rescues);

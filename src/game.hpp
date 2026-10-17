@@ -19,6 +19,7 @@ struct GameOptions {
 struct Game {
     Board board;
     Tray tray{-1, -1, -1};
+    int hold = -1;
     ScoreState score;
     bool over = false;
     int rescues_left = 0;
@@ -34,6 +35,11 @@ struct MoveResult {
     uint64_t cleared = 0;
 };
 
+constexpr int kHoldSlot = kTraySize;
+
+bool game_has_move(const Game& game);
+int game_piece_in_slot(const Game& game, int slot);
+bool game_swap_hold(Game& game, int slot);
 void game_start(Game& game, uint32_t seed, const GameOptions& options);
 bool game_rescue(Game& game);
 MoveResult game_place(Game& game, int slot, int row, int col);

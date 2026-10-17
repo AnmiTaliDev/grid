@@ -19,6 +19,7 @@ constexpr int kKindPause = 10;
 constexpr int kKindFocus = 11;
 constexpr int kKindWouldClear = 12;
 constexpr int kKindPanel = 13;
+constexpr int kKindSmallSlot = 14;
 
 uint32_t pack(Color c)
 {
@@ -160,6 +161,18 @@ const Sprite& tray_slot_sprite(Gfx& g)
     Canvas c = make_canvas(148, 148, 1);
     fill_rr(c, {0, 0, 148, 148}, 22, palette::kTraySlot);
     inset_band(c, {0, 0, 148, 148}, 22, 2, with_alpha(rgb(0x000000), 0.40f));
+    return store(g, key, c);
+}
+
+const Sprite& small_slot_sprite(Gfx& g, float w, float h)
+{
+    SpriteKey key{kKindSmallSlot, w, h};
+    if (const Sprite* s = cached(g, key)) {
+        return *s;
+    }
+    Canvas c = make_canvas(w, h, 1);
+    fill_rr(c, {0, 0, w, h}, 16, palette::kTraySlot);
+    inset_band(c, {0, 0, w, h}, 16, 2, with_alpha(rgb(0x000000), 0.40f));
     return store(g, key, c);
 }
 

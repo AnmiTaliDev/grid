@@ -70,6 +70,11 @@ int next_rescues(int rescues)
     return next_in(kRescueCounts, rescues);
 }
 
+int next_undos(int undos)
+{
+    return next_in(kUndoCounts, undos);
+}
+
 int next_deal(int deal)
 {
     return (deal + 1) % 3;
@@ -96,13 +101,17 @@ Settings load_settings()
     int rescues = s.rescues;
     int deal = s.deal;
     unsigned shapes = s.shapes;
-    std::sscanf(text.c_str(), "grid %d lift %d fullscreen %d rescues %d deal %d shapes %u", &grid, &lift, &full,
-                &rescues, &deal, &shapes);
+    int undos = s.undos;
+    int hold = s.hold ? 1 : 0;
+    std::sscanf(text.c_str(), "grid %d lift %d fullscreen %d rescues %d deal %d shapes %u undos %d hold %d",
+                &grid, &lift, &full, &rescues, &deal, &shapes, &undos, &hold);
     s.grid = allowed(kGridSizes, grid) ? grid : s.grid;
     s.lift = allowed(kHandLifts, lift) ? lift : s.lift;
     s.fullscreen = full != 0;
     s.rescues = allowed(kRescueCounts, rescues) ? rescues : s.rescues;
     s.deal = deal >= 0 && deal <= 2 ? deal : 0;
+    s.undos = allowed(kUndoCounts, undos) ? undos : s.undos;
+    s.hold = hold != 0;
     shapes &= all_shapes();
     s.shapes = shapes != 0 ? shapes : s.shapes;
     return s;
@@ -116,7 +125,8 @@ void save_settings(const Settings& settings)
     }
     std::string text = "grid " + std::to_string(settings.grid) + " lift " + std::to_string(settings.lift) +
                        " fullscreen " + (settings.fullscreen ? "1" : "0") + " rescues " + std::to_string(settings.rescues) +
-                       " deal " + std::to_string(settings.deal) + " shapes " + std::to_string(settings.shapes) + "\n";
+                       " deal " + std::to_string(settings.deal) + " shapes " + std::to_string(settings.shapes) +
+                       " undos " + std::to_string(settings.undos) + " hold " + (settings.hold ? "1" : "0") + "\n";
     if (!SDL_SaveFile(path.c_str(), text.data(), text.size())) {
         SDL_Log("Cannot save settings: %s", SDL_GetError());
     }

@@ -9,6 +9,12 @@ constexpr float kCellPitch = 58.0f;
 constexpr float kCellSize = 54.0f;
 constexpr float kBoardY = 228.0f;
 constexpr float kBedY = 216.0f;
+constexpr float kBottomY = 906.0f;
+constexpr float kBottomH = 48.0f;
+constexpr float kUndoX = 28.0f;
+constexpr float kUndoW = 124.0f;
+constexpr float kHoldX = 392.0f;
+constexpr float kHoldW = 120.0f;
 
 constexpr float bed_width(int size)
 {
