@@ -110,9 +110,11 @@ Settings load_settings()
     int hold = s.hold ? 1 : 0;
     int volume = s.volume;
     int vibration = s.vibration ? 1 : 0;
+    int tutorial = 0;
     std::sscanf(text.c_str(),
-                "grid %d lift %d fullscreen %d rescues %d deal %d shapes %u undos %d hold %d volume %d vibration %d",
-                &grid, &lift, &full, &rescues, &deal, &shapes, &undos, &hold, &volume, &vibration);
+                "grid %d lift %d fullscreen %d rescues %d deal %d shapes %u undos %d hold %d volume %d vibration %d "
+                "tutorial %d",
+                &grid, &lift, &full, &rescues, &deal, &shapes, &undos, &hold, &volume, &vibration, &tutorial);
     s.grid = allowed(kGridSizes, grid) ? grid : s.grid;
     s.lift = allowed(kHandLifts, lift) ? lift : s.lift;
     s.fullscreen = full != 0;
@@ -122,6 +124,7 @@ Settings load_settings()
     s.hold = hold != 0;
     s.volume = allowed(kVolumes, volume) ? volume : s.volume;
     s.vibration = vibration != 0;
+    s.tutorial_seen = tutorial != 0;
     shapes &= all_shapes();
     s.shapes = shapes != 0 ? shapes : s.shapes;
     return s;
@@ -138,7 +141,8 @@ void save_settings(const Settings& settings)
                        " deal " + std::to_string(settings.deal) + " shapes " + std::to_string(settings.shapes) +
                        " undos " + std::to_string(settings.undos) + " hold " + (settings.hold ? "1" : "0") +
                        " volume " + std::to_string(settings.volume) +
-                       " vibration " + (settings.vibration ? "1" : "0") + "\n";
+                       " vibration " + (settings.vibration ? "1" : "0") +
+                       " tutorial " + (settings.tutorial_seen ? "1" : "0") + "\n";
     if (!SDL_SaveFile(path.c_str(), text.data(), text.size())) {
         SDL_Log("Cannot save settings: %s", SDL_GetError());
     }

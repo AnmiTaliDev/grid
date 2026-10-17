@@ -95,6 +95,12 @@ struct StatsView {
     int pressed = -1;
 };
 
+struct TutorialView {
+    int page = 0;
+    float seconds = 0;
+    int pressed = -1;
+};
+
 struct PiecesView {
     uint32_t shapes = 0;
     int pressed = -1;

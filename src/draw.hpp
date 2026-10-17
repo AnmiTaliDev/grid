@@ -53,6 +53,18 @@ struct StatsLayout {
     Rect back;
 };
 
+struct TutorialLayout {
+    Rect panel;
+    float title_top;
+    Rect art;
+    float caption_top;
+    Rect next;
+    Rect skip;
+};
+
+TutorialLayout tutorial_layout();
+ButtonSpec tutorial_next_button(const TutorialLayout& l, bool last);
+ButtonSpec tutorial_skip_button(const TutorialLayout& l);
 StatsLayout stats_layout();
 ButtonSpec stats_back_button(const StatsLayout& l);
 PiecesLayout pieces_layout();
@@ -75,6 +87,7 @@ void draw_menu(Gfx& g, const MenuView& v);
 void draw_settings(Gfx& g, const SettingsView& v);
 void draw_pieces(Gfx& g, const PiecesView& v);
 void draw_stats(Gfx& g, const StatsView& v);
+void draw_tutorial(Gfx& g, const TutorialView& v);
 void draw_game(Gfx& g, const GameView& v);
 void draw_game_over(Gfx& g, const OverView& v);
 void draw_pause(Gfx& g, const PauseView& v);

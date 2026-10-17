@@ -34,6 +34,7 @@ struct Settings {
     bool hold = true;
     int volume = 70;
     bool vibration = true;
+    bool tutorial_seen = false;
     int deal = 0;
     uint32_t shapes = 0;
     bool fullscreen = false;

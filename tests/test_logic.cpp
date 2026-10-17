@@ -16,6 +16,7 @@
 #include "serialize.hpp"
 #include "stats.hpp"
 #include "synth.hpp"
+#include "tutorial.hpp"
 
 namespace {
 
@@ -607,6 +608,33 @@ void test_stats()
     assert(format_duration(-4) == "0s" && format_duration(360000) == "100h 00m");
 }
 
+void test_tutorial()
+{
+    assert(kTutorialPages == 3);
+    for (int page = -2; page < kTutorialPages + 2; page++) {
+        const std::vector<std::string>& lines = tutorial_caption(page);
+        assert(lines.size() >= 2 && lines.size() <= 3);
+        for (const std::string& line : lines) {
+            assert(!line.empty() && line.size() <= 38);
+            assert(line.find("\xE2\x80\x94") == std::string::npos);
+        }
+    }
+    assert(tutorial_caption(-5) == tutorial_caption(0));
+    assert(tutorial_caption(99) == tutorial_caption(kTutorialPages - 1));
+    assert(tutorial_loop(0) == 0 && tutorial_loop(-3) == 0);
+    assert(std::fabs(tutorial_loop(kTutorialPeriod + 0.5f) - 0.5f) < 1e-4f);
+    assert(tutorial_loop(1000.7f) >= 0 && tutorial_loop(1000.7f) < kTutorialPeriod);
+    assert(tutorial_ease(0.0f, 1.0f, 2.0f) == 0.0f && tutorial_ease(5.0f, 1.0f, 2.0f) == 1.0f);
+    float prev = 0;
+    for (int i = 0; i <= 100; i++) {
+        float e = tutorial_ease(static_cast<float>(i) / 50.0f, 0.5f, 1.5f);
+        assert(e >= prev && e >= 0 && e <= 1);
+        prev = e;
+    }
+    assert(std::fabs(tutorial_ease(1.0f, 0.5f, 1.5f) - 0.5f) < 1e-5f);
+    assert(tutorial_ease(1.0f, 2.0f, 2.0f) == 0.0f && tutorial_ease(3.0f, 2.0f, 2.0f) == 1.0f);
+}
+
 void test_tray_refill()
 {
     Game game;
@@ -687,6 +715,7 @@ int main()
     test_synth_and_mixer();
     test_pulses();
     test_stats();
+    test_tutorial();
     test_tray_refill();
     test_deal_fairness();
     test_score_and_streak();

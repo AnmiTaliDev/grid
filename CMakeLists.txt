@@ -40,6 +40,7 @@ add_library(grid_logic STATIC
     src/sound_names.cpp
     src/pulses.cpp
     src/stats.cpp
+    src/tutorial.cpp
     src/mixer.cpp
 )
 target_include_directories(grid_logic PUBLIC src)
@@ -64,6 +65,7 @@ add_library(grid_render STATIC
     src/draw_settings.cpp
     src/draw_pieces.cpp
     src/draw_stats.cpp
+    src/draw_tutorial.cpp
     src/settings.cpp
     src/audio.cpp
     src/assets.cpp

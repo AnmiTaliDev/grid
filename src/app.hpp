@@ -19,6 +19,7 @@ enum class Screen {
     Settings,
     Pieces,
     Stats,
+    Tutorial,
     Over,
 };
 
@@ -30,6 +31,8 @@ struct App {
     Stats stats;
     int counted_score = -1;
     float play_ms = 0;
+    int tutorial_page = 0;
+    float tutorial_ms = 0;
     int previous_best = 0;
     MenuView menu;
     GameView view;

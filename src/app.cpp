@@ -11,6 +11,7 @@
 #include "piece.hpp"
 #include "settings.hpp"
 #include "storage.hpp"
+#include "tutorial.hpp"
 #include "titlebar.hpp"
 
 namespace {
@@ -149,7 +150,14 @@ void activate_menu(App& app, int which)
     if (which == kMenuContinue) {
         continue_game(app);
     } else if (which == kMenuPlay) {
-        start_game(app);
+        if (app.settings.tutorial_seen) {
+            start_game(app);
+        } else {
+            app.tutorial_page = 0;
+            app.tutorial_ms = 0;
+            app.panel_pressed = -1;
+            app.screen = Screen::Tutorial;
+        }
     } else if (which == kMenuSettings) {
         app.reset_armed = false;
         app.panel_pressed = -1;
@@ -405,6 +413,27 @@ void settings_activate(App& app, int hit)
     save_settings(app.settings);
 }
 
+bool tutorial_is_last(const App& app)
+{
+    return app.tutorial_page >= kTutorialPages - 1;
+}
+
+int tutorial_hit(const App& app, float x, float y)
+{
+    TutorialLayout l = tutorial_layout();
+    if (inside(l.next, x, y)) {
+        return 0;
+    }
+    return !tutorial_is_last(app) && inside(l.skip, x, y) ? 1 : -1;
+}
+
+void finish_tutorial(App& app)
+{
+    app.settings.tutorial_seen = true;
+    save_settings(app.settings);
+    start_game(app);
+}
+
 int pieces_hit(float x, float y)
 {
     PiecesLayout l = pieces_layout();
@@ -445,6 +474,8 @@ void pointer_down(App& app, Gfx& g, float x, float y)
         app.panel_pressed = pieces_hit(x, y);
     } else if (app.screen == Screen::Stats) {
         app.panel_pressed = inside(stats_layout().back, x, y) ? 0 : -1;
+    } else if (app.screen == Screen::Tutorial) {
+        app.panel_pressed = tutorial_hit(app, x, y);
     } else {
         bool chip = app.game.score.score > app.previous_best;
         app.panel_pressed = over_hit(g, x, y, chip, app.game.rescues_left > 0);
@@ -481,6 +512,19 @@ void pointer_up(App& app, Gfx& g, float x, float y)
                 app.screen = Screen::Play;
             } else {
                 go_menu(app);
+            }
+        }
+    } else if (app.screen == Screen::Tutorial) {
+        int hit = tutorial_hit(app, x, y);
+        int pressed = app.panel_pressed;
+        app.panel_pressed = -1;
+        if (hit >= 0 && hit == pressed) {
+            sfx(app, Sound::Click);
+            if (hit == 1 || tutorial_is_last(app)) {
+                finish_tutorial(app);
+            } else {
+                app.tutorial_page++;
+                app.tutorial_ms = 0;
             }
         }
     } else if (app.screen == Screen::Stats) {
@@ -542,6 +586,8 @@ void key_down(App& app, const SDL_KeyboardEvent& key)
             app.screen = Screen::Play;
         } else if (app.screen == Screen::Pieces) {
             app.screen = Screen::Settings;
+        } else if (app.screen == Screen::Tutorial) {
+            finish_tutorial(app);
         } else if (app.screen == Screen::Over || app.screen == Screen::Settings || app.screen == Screen::Stats) {
             go_menu(app);
         }
@@ -670,6 +716,10 @@ void app_event(App& app, Gfx& g, SDL_Event& event)
 
 void app_update(App& app, float dt_ms)
 {
+    if (app.screen == Screen::Tutorial) {
+        app.tutorial_ms += dt_ms;
+        return;
+    }
     if (app.screen != Screen::Play && app.screen != Screen::Pause) {
         return;
     }
@@ -733,6 +783,12 @@ void app_draw(App& app, Gfx& g)
         pv.score = app.game.score.score;
         pv.pressed = app.panel_pressed;
         draw_pause(g, pv);
+    } else if (app.screen == Screen::Tutorial) {
+        TutorialView tv;
+        tv.page = app.tutorial_page;
+        tv.seconds = app.tutorial_ms / 1000.0f;
+        tv.pressed = app.panel_pressed;
+        draw_tutorial(g, tv);
     } else if (app.screen == Screen::Stats) {
         StatsView sv;
         sv.stats = app.stats;
