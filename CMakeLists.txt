@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
 # SPDX-License-Identifier: GPL-3.0-only
 cmake_minimum_required(VERSION 3.20)
+set(GRID_VERSION "0.1.0" CACHE STRING "Package version")
 project(Grid LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -122,3 +123,27 @@ add_test(NAME sounds COMMAND test_sounds)
 add_executable(test_frames tests/test_frames.cpp tests/frames.cpp)
 target_link_libraries(test_frames PRIVATE grid_render)
 add_test(NAME frames COMMAND test_frames WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+include(GNUInstallDirs)
+install(TARGETS grid RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(DIRECTORY assets/ DESTINATION ${CMAKE_INSTALL_DATADIR}/grid/assets)
+install(FILES packaging/dev.anmitali.grid.desktop DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+install(FILES assets/icon.svg DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
+        RENAME dev.anmitali.grid.svg)
+install(FILES LICENSE assets/OFL.txt DESTINATION ${CMAKE_INSTALL_DATADIR}/doc/grid)
+
+set(CPACK_PACKAGE_NAME "grid")
+set(CPACK_PACKAGE_VERSION "${GRID_VERSION}")
+set(CPACK_PACKAGE_CONTACT "AnmiTaliDev <anmitalidev@nuros.org>")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Block puzzle game")
+set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
+set(CPACK_STRIP_FILES OFF)
+set(CPACK_DEBIAN_PACKAGE_SECTION "games")
+set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+set(CPACK_RPM_PACKAGE_LICENSE "GPL-3.0-only")
+set(CPACK_RPM_PACKAGE_GROUP "Amusements/Games")
+set(CPACK_RPM_FILE_NAME RPM-DEFAULT)
+set(CPACK_RPM_PACKAGE_AUTOREQ ON)
+set(CPACK_GENERATOR "DEB;RPM")
+include(CPack)

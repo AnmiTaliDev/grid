@@ -12,7 +12,14 @@ std::string asset_path(const std::string& relative)
     return relative;
 #else
     const char* base = SDL_GetBasePath();
-    return std::string(base ? base : "") + "assets/" + relative;
+    std::string root = base ? base : "";
+    const std::string candidates[] = {root + "assets/", root + "../share/grid/assets/"};
+    for (const std::string& candidate : candidates) {
+        if (SDL_GetPathInfo((candidate + relative).c_str(), nullptr)) {
+            return candidate + relative;
+        }
+    }
+    return candidates[0] + relative;
 #endif
 }
 

@@ -45,6 +45,12 @@ jobs:
           SDL_VIDEODRIVER: dummy
           SDL_AUDIODRIVER: dummy
         run: ctest --test-dir build --output-on-failure
+      - name: Check distribution packages
+        run: |
+          sudo apt-get install -y rpm dpkg-dev
+          mkdir -p dist-pkgs
+          (cd build && cpack --config CPackConfig.cmake -B "$GITHUB_WORKSPACE/dist-pkgs")
+          ls dist-pkgs
 
   android:
     runs-on: ubuntu-24.04

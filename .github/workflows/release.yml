@@ -38,10 +38,11 @@ jobs:
             libdbus-1-dev libibus-1.0-dev libudev-dev libpipewire-0.3-dev libwayland-dev libdecor-0-dev liburing-dev
       - name: Build
         run: |
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug \
+          VERSION="$(echo "${GITHUB_REF_NAME#v}" | tr '-' '~')"
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DGRID_VERSION="$VERSION" \
             -DSDL3_SOURCE_DIR=$PWD/deps/SDL -DSDL3_TTF_SOURCE_DIR=$PWD/deps/SDL_ttf
           cmake --build build --target grid
-      - name: Package
+      - name: Package archive
         run: |
           NAME="Grid-${GITHUB_REF_NAME}-linux-x86_64-debug"
           mkdir -p "dist/$NAME"
@@ -50,10 +51,53 @@ jobs:
           cp LICENSE "dist/$NAME/"
           tar -C dist -czf "dist/$NAME.tar.gz" "$NAME"
           rm -rf "dist/$NAME"
+      - name: Distribution packages
+        run: |
+          sudo apt-get install -y rpm dpkg-dev
+          mkdir -p dist-pkgs
+          (cd build && cpack --config CPackConfig.cmake -B "$GITHUB_WORKSPACE/dist-pkgs")
+          DESTDIR="$PWD/stage" cmake --install build --prefix /usr
+          tar -C stage -czf arch-stage.tar.gz usr
       - uses: actions/upload-artifact@v4
         with:
-          name: linux
+          name: release-linux
           path: dist/*.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-packages
+          path: |
+            dist-pkgs/*.deb
+            dist-pkgs/*.rpm
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arch-stage
+          path: |
+            arch-stage.tar.gz
+            packaging/arch/PKGBUILD.in
+
+  arch:
+    needs: linux
+    runs-on: ubuntu-24.04
+    container: archlinux:latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: arch-stage
+          path: stage
+      - name: Build package
+        run: |
+          pacman -Syu --noconfirm base-devel
+          useradd -m builder
+          VERSION="$(echo "${GITHUB_REF_NAME#v}" | tr '-' '_')"
+          mkdir pkg
+          cp stage/arch-stage.tar.gz pkg/stage.tar.gz
+          sed "s/@VERSION@/$VERSION/" stage/packaging/arch/PKGBUILD.in > pkg/PKGBUILD
+          chown -R builder:builder pkg
+          su builder -c "cd pkg && makepkg -f --nodeps --skipinteg"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-arch
+          path: pkg/*.pkg.tar.zst
 
   windows:
     runs-on: windows-latest
@@ -89,7 +133,7 @@ jobs:
           rm -rf "$NAME"
       - uses: actions/upload-artifact@v4
         with:
-          name: windows
+          name: release-windows
           path: dist/*.zip
 
   macos:
@@ -124,7 +168,7 @@ jobs:
           rm -rf "$NAME"
       - uses: actions/upload-artifact@v4
         with:
-          name: macos
+          name: release-macos
           path: dist/*.zip
 
   android:
@@ -165,16 +209,17 @@ jobs:
           cp android/app/build/outputs/apk/debug/app-debug.apk "dist/Grid-${GITHUB_REF_NAME}-android-debug.apk"
       - uses: actions/upload-artifact@v4
         with:
-          name: android
+          name: release-android
           path: dist/*.apk
 
   publish:
-    needs: [linux, windows, macos, android]
+    needs: [linux, arch, windows, macos, android]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4
         with:
           path: dist
+          pattern: release-*
           merge-multiple: true
       - name: Create release
         env:

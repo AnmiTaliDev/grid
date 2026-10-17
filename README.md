@@ -24,7 +24,7 @@ To build SDL3 and SDL3_ttf from source instead of using installed packages, pass
 
 ## Releases
 
-Pushing a tag that starts with `v` builds debug packages for Linux, Windows, macOS and Android and attaches them to a pre-release. Debug APKs are signed with a temporary key, so each build must be uninstalled before installing the next.
+Pushing a tag that starts with `v` builds debug packages for Linux, Windows, macOS and Android and attaches them to a pre-release. Linux builds are provided as an archive and as DEB, RPM and Arch Linux packages. The packages install the game to `/usr/bin/grid` and its data to `/usr/share/grid`. Debug APKs are signed with a temporary key, so each build must be uninstalled before installing the next.
 
 ## Android
 

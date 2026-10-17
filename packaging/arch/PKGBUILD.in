@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2026 AnmiTaliDev <anmitalidev@nuros.org>
+# SPDX-License-Identifier: GPL-3.0-only
+pkgname=grid
+pkgver=@VERSION@
+pkgrel=1
+pkgdesc="Block puzzle game"
+arch=('x86_64')
+license=('GPL-3.0-only')
+depends=('glibc' 'gcc-libs')
+options=('!strip' '!debug')
+source=('stage.tar.gz')
+sha256sums=('SKIP')
+
+package() {
+    cp -a "$srcdir/usr" "$pkgdir/"
+}
