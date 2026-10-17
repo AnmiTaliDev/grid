@@ -6,10 +6,19 @@
 
 int apply_move_score(ScoreState& state, int piece_cells, int lines)
 {
-    state.streak = lines > 0 ? state.streak + 1 : 0;
+    if (lines > 0) {
+        state.streak++;
+        state.idle = 0;
+    } else {
+        state.idle++;
+        if (state.idle >= kStreakGraceMoves) {
+            state.streak = 0;
+            state.idle = 0;
+        }
+    }
     int gain = piece_cells;
     if (lines > 0) {
-        gain += 10 * lines * lines * std::max(1, state.streak);
+        gain += kClearBase * lines * lines * std::max(1, state.streak);
     }
     state.score += gain;
     return gain;

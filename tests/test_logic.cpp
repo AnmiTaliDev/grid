@@ -106,7 +106,7 @@ void test_simultaneous_clear()
     for (int i = 0; i < kBoardSize; i++) {
         assert(game.board.cell[0][i] == 0 && game.board.cell[i][0] == 0);
     }
-    assert(game.score.score == 1 + 10 * 2 * 2 * 1);
+    assert(game.score.score == 1 + kClearBase * 2 * 2 * 1);
 }
 
 void test_smaller_grid()
@@ -354,6 +354,7 @@ void test_save_roundtrip()
     game.board.cell[6][0] = 1;
     game.score.score = 1234;
     game.score.streak = 3;
+    game.score.idle = 2;
     int custom = register_custom_piece({{0, 0}, {0, 1}, {1, 1}, {2, 1}, {2, 2}}, 3);
     game.tray = {find_piece("tee", 1), -1, custom};
     std::string text = serialize_game(game, 777);
@@ -363,7 +364,7 @@ void test_save_roundtrip()
     assert(deserialize_game(text, loaded, previous));
     assert(previous == 777);
     assert(loaded.board.size == 7);
-    assert(loaded.score.score == 1234 && loaded.score.streak == 3);
+    assert(loaded.score.score == 1234 && loaded.score.streak == 3 && loaded.score.idle == 2);
     assert(loaded.rescues_left == 2 && loaded.deal_mode == 2 && !loaded.over);
     assert(loaded.board.cell[3][3] == 4 && loaded.board.cell[6][0] == 1);
     assert(loaded.tray[0] == find_piece("tee", 1) && loaded.tray[1] == -1);
@@ -881,18 +882,41 @@ void test_deal_fairness()
 void test_score_and_streak()
 {
     ScoreState s;
-    assert(apply_move_score(s, 5, 0) == 5);
-    assert(s.streak == 0);
-    assert(apply_move_score(s, 1, 1) == 1 + 10);
-    assert(s.streak == 1);
-    assert(apply_move_score(s, 1, 1) == 1 + 20);
+    int total = 0;
+    auto move = [&](int cells, int lines) {
+        int gain = apply_move_score(s, cells, lines);
+        total += gain;
+        assert(s.score == total);
+        return gain;
+    };
+    assert(move(5, 0) == 5);
+    assert(s.streak == 0 && s.idle == 1);
+    assert(move(1, 1) == 1 + kClearBase);
+    assert(s.streak == 1 && s.idle == 0);
+    assert(move(1, 1) == 1 + kClearBase * 2);
     assert(s.streak == 2);
-    assert(apply_move_score(s, 3, 2) == 3 + 10 * 4 * 3);
+    assert(move(3, 2) == 3 + kClearBase * 4 * 3);
     assert(s.streak == 3);
-    assert(apply_move_score(s, 2, 0) == 2);
-    assert(s.streak == 0);
-    assert(apply_move_score(s, 1, 3) == 1 + 90);
-    assert(s.score == 5 + 11 + 21 + 123 + 2 + 91);
+    assert(move(2, 0) == 2 && s.streak == 3 && s.idle == 1);
+    assert(move(2, 0) == 2 && s.streak == 3 && s.idle == 2);
+    assert(move(1, 1) == 1 + kClearBase * 4);
+    assert(s.streak == 4 && s.idle == 0);
+    assert(move(2, 0) == 2 && move(2, 0) == 2);
+    assert(s.streak == 4 && s.idle == 2);
+    assert(move(2, 0) == 2);
+    assert(s.streak == 0 && s.idle == 0);
+    assert(move(1, 3) == 1 + kClearBase * 9);
+    assert(s.streak == 1);
+    assert(move(1, 4) == 1 + kClearBase * 16 * 2);
+    assert(kStreakGraceMoves == 3 && kClearBase == 50);
+    ScoreState fresh;
+    assert(apply_move_score(fresh, 1, 1) == 1 + kClearBase);
+    ScoreState idle_only;
+    for (int i = 0; i < 10; i++) {
+        apply_move_score(idle_only, 1, 0);
+        assert(idle_only.streak == 0 && idle_only.idle < kStreakGraceMoves);
+    }
+    assert(idle_only.score == 10);
 }
 
 }

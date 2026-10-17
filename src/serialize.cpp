@@ -102,6 +102,7 @@ std::string serialize_game(const Game& game, int previous_best)
         {"size", std::to_string(game.board.size)},
         {"score", std::to_string(game.score.score)},
         {"streak", std::to_string(game.score.streak)},
+        {"idle", std::to_string(game.score.idle)},
         {"rescues", std::to_string(game.rescues_left)},
         {"deal", std::to_string(game.deal_mode)},
         {"allowed", std::to_string(game.allowed)},
@@ -169,6 +170,7 @@ bool deserialize_game(const std::string& text, Game& game, int& previous_best)
     }
     loaded.score.score = static_cast<int>(score);
     loaded.score.streak = static_cast<int>(streak);
+    loaded.score.idle = static_cast<int>(kv.get_int("idle", 0, 0, kStreakGraceMoves));
     loaded.rescues_left = static_cast<int>(rescues);
     loaded.deal_mode = static_cast<int>(deal);
     loaded.allowed = allowed;
