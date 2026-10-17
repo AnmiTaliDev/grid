@@ -5,3 +5,4 @@
 #include <string>
 
 std::string asset_path(const std::string& relative);
+void load_translations();

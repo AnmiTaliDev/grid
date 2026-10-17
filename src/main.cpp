@@ -44,6 +44,7 @@ int main(int argc, char** argv)
     SDL_SetRenderDrawColor(renderer, 16, 28, 38, 255);
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
+    load_translations();
     Gfx gfx;
     if (!gfx_init(gfx, renderer, asset_path("Geologica.ttf"))) {
         SDL_Log("Graphics init failed: %s", SDL_GetError());

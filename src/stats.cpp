@@ -3,7 +3,10 @@
 #include "stats.hpp"
 
 #include <algorithm>
-#include <sstream>
+#include <cstdint>
+#include <vector>
+
+#include "kv.hpp"
 
 void stats_on_move(Stats& stats, int lines, int streak)
 {
@@ -36,39 +39,35 @@ int stats_average(const Stats& stats)
 
 std::string serialize_stats(const Stats& stats)
 {
-    std::ostringstream out;
-    out << "stats games " << stats.games << " total " << stats.total_score << " streak " << stats.best_streak
-        << " lines " << stats.lines << " pieces " << stats.pieces << " seconds " << stats.seconds << "\n";
-    return out.str();
+    return write_kv({
+        {"games", std::to_string(stats.games)},
+        {"total", std::to_string(stats.total_score)},
+        {"streak", std::to_string(stats.best_streak)},
+        {"lines", std::to_string(stats.lines)},
+        {"pieces", std::to_string(stats.pieces)},
+        {"seconds", std::to_string(stats.seconds)},
+    });
 }
 
 Stats parse_stats(const std::string& text)
 {
+    Kv kv;
+    if (text.find('=') != std::string::npos) {
+        kv = parse_kv(text);
+    } else {
+        std::vector<std::string> words = split_words(text);
+        if (words.empty() || words[0] != "stats") {
+            return Stats{};
+        }
+        kv = parse_word_pairs(text, true);
+    }
+    const int64_t big = 2000000000;
     Stats s;
-    std::istringstream in(text);
-    std::string tag;
-    if (!(in >> tag) || tag != "stats") {
-        return s;
-    }
-    std::string key;
-    int64_t value = 0;
-    while (in >> key >> value) {
-        if (value < 0) {
-            continue;
-        }
-        if (key == "games") {
-            s.games = static_cast<int>(std::min<int64_t>(value, 2000000000));
-        } else if (key == "total") {
-            s.total_score = value;
-        } else if (key == "streak") {
-            s.best_streak = static_cast<int>(std::min<int64_t>(value, 2000000000));
-        } else if (key == "lines") {
-            s.lines = static_cast<int>(std::min<int64_t>(value, 2000000000));
-        } else if (key == "pieces") {
-            s.pieces = static_cast<int>(std::min<int64_t>(value, 2000000000));
-        } else if (key == "seconds") {
-            s.seconds = value;
-        }
-    }
+    s.games = static_cast<int>(std::min<int64_t>(kv.get_int("games", 0, 0, INT64_MAX), big));
+    s.total_score = kv.get_int("total", 0, 0, INT64_MAX);
+    s.best_streak = static_cast<int>(std::min<int64_t>(kv.get_int("streak", 0, 0, INT64_MAX), big));
+    s.lines = static_cast<int>(std::min<int64_t>(kv.get_int("lines", 0, 0, INT64_MAX), big));
+    s.pieces = static_cast<int>(std::min<int64_t>(kv.get_int("pieces", 0, 0, INT64_MAX), big));
+    s.seconds = kv.get_int("seconds", 0, 0, INT64_MAX);
     return s;
 }

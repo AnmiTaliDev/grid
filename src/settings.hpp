@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
+#include <string>
 
 constexpr int kGridSizes[] = {6, 7, 8};
 constexpr int kHandLifts[] = {0, 60, 100};
@@ -26,6 +28,17 @@ enum SettingId {
 };
 
 constexpr int kSettingsBack = 99;
+
+template <size_t N>
+bool value_allowed(const int (&values)[N], int value)
+{
+    for (int v : values) {
+        if (v == value) {
+            return true;
+        }
+    }
+    return false;
+}
 
 struct Settings {
     int grid = 8;
@@ -52,3 +65,6 @@ int next_language(int lang);
 int next_deal(int deal);
 Settings load_settings();
 void save_settings(const Settings& settings);
+
+std::string serialize_settings(const Settings& settings);
+Settings parse_settings(const std::string& text, const Settings& defaults);

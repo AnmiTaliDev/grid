@@ -68,6 +68,19 @@ enum class Str {
     UndoHelp,
     HoldHelp,
     RescueHelp,
+    LinesOne,
+    LinesFew,
+    LinesMany,
+    LanguageName,
+    Tutorial11,
+    Tutorial12,
+    Tutorial13,
+    Tutorial21,
+    Tutorial22,
+    Tutorial23,
+    Tutorial31,
+    Tutorial32,
+    Tutorial33,
     Count,
 };
 
@@ -76,4 +89,7 @@ Lang lang_from_index(int index);
 Lang detect_language(const char* preferred);
 std::string language_name(Lang lang);
 std::string lines_text(Lang lang, int count);
+const char* str_key(Str id);
+void i18n_load(Lang lang, const std::string& text);
+void i18n_reset();
 int plural_form_ru(int count);

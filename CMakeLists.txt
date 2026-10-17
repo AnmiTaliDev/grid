@@ -37,6 +37,8 @@ add_library(grid_logic STATIC
     src/drop.cpp
     src/serialize.cpp
     src/bests.cpp
+    src/kv.cpp
+    src/settings_format.cpp
     src/sound_names.cpp
     src/pulses.cpp
     src/stats.cpp
@@ -98,6 +100,7 @@ target_link_libraries(make_sounds PRIVATE grid_synth grid_logic)
 
 add_executable(test_logic tests/test_logic.cpp)
 target_link_libraries(test_logic PRIVATE grid_logic grid_synth)
+target_compile_definitions(test_logic PRIVATE GRID_ASSETS_DIR="${CMAKE_SOURCE_DIR}/assets")
 add_test(NAME logic COMMAND test_logic)
 
 add_executable(test_sounds tests/test_sounds.cpp)

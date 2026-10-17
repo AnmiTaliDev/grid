@@ -6,10 +6,14 @@
 #include <algorithm>
 #include <algorithm>
 #include <cmath>
+#include <fstream>
+#include <sstream>
 #include <set>
 
 #include "bests.hpp"
 #include "game.hpp"
+#include "kv.hpp"
+#include "settings.hpp"
 #include "mixer.hpp"
 #include "pulses.hpp"
 #include "format.hpp"
@@ -385,11 +389,12 @@ void test_save_rejects_garbage()
     assert(!deserialize_game("hello world", out, previous));
     assert(!deserialize_game(good.substr(0, good.size() / 2), out, previous));
     std::string bad_version = good;
-    bad_version.replace(bad_version.find(" 1 size"), 7, " 9 size");
+    bad_version.replace(bad_version.find("version = 2"), 11, "version = 9");
     assert(!deserialize_game(bad_version, out, previous));
     std::string bad_cell = good;
-    bad_cell.replace(bad_cell.find("cells ") + 6, 1, "9");
+    bad_cell.replace(bad_cell.find("cells = ") + 8, 1, "9");
     assert(!deserialize_game(bad_cell, out, previous));
+    assert(!deserialize_game("grid-save 1 size 8 score 5", out, previous));
     Game stuck;
     game_start(stuck, 3, options(8, 0, 0));
     for (int r = 0; r < kBoardSize; r++) {
@@ -487,12 +492,12 @@ void test_hold_ends_game_correctly()
     Game fresh;
     game_start(fresh, 16, options(8, 0, 0));
     std::string full = serialize_game(fresh, 3);
-    std::string legacy = full.substr(0, full.find(" hold"));
+    std::string without_hold = full.substr(0, full.find("hold = "));
     Game old;
-    assert(deserialize_game(legacy + "\n", old, previous));
+    assert(deserialize_game(without_hold, old, previous));
     assert(old.hold == -1);
     std::string bad = full;
-    bad.replace(bad.find(" hold -"), 7, " hold x");
+    bad.replace(bad.find("hold = -"), 8, "hold = x");
     assert(!deserialize_game(bad, old, previous));
 }
 
@@ -656,8 +661,59 @@ bool has_cyrillic(const std::string& s)
     return false;
 }
 
+std::string read_text(const std::string& path)
+{
+    std::ifstream in(path, std::ios::binary);
+    std::stringstream buffer;
+    buffer << in.rdbuf();
+    return buffer.str();
+}
+
+void load_languages()
+{
+    i18n_reset();
+    i18n_load(Lang::English, read_text(std::string(GRID_ASSETS_DIR) + "/lang/en.txt"));
+    i18n_load(Lang::Russian, read_text(std::string(GRID_ASSETS_DIR) + "/lang/ru.txt"));
+}
+
+void test_language_files()
+{
+    std::string en_text = read_text(std::string(GRID_ASSETS_DIR) + "/lang/en.txt");
+    std::string ru_text = read_text(std::string(GRID_ASSETS_DIR) + "/lang/ru.txt");
+    assert(!en_text.empty() && !ru_text.empty());
+    Kv en = parse_kv(en_text);
+    Kv ru = parse_kv(ru_text);
+    assert(en.values.size() == static_cast<size_t>(Str::Count));
+    assert(ru.values.size() == static_cast<size_t>(Str::Count));
+    i18n_reset();
+    for (int i = 0; i < static_cast<int>(Str::Count); i++) {
+        std::string key = str_key(static_cast<Str>(i));
+        assert(en.has(key) && ru.has(key));
+        assert(!en.get(key).empty() && !ru.get(key).empty());
+        assert(en.get(key) == tr(Lang::English, static_cast<Str>(i)));
+    }
+    for (const auto& [key, value] : ru.values) {
+        bool known = false;
+        for (int i = 0; i < static_cast<int>(Str::Count); i++) {
+            known = known || key == str_key(static_cast<Str>(i));
+        }
+        assert(known);
+        assert(value.find("\xE2\x80\x94") == std::string::npos);
+    }
+    i18n_reset();
+    assert(std::string(tr(Lang::Russian, Str::Play)) == "Play");
+    i18n_load(Lang::Russian, "play = Играть\nunknown = x\n# comment\nmenu =\n");
+    assert(std::string(tr(Lang::Russian, Str::Play)) == "Играть");
+    assert(std::string(tr(Lang::Russian, Str::Menu)) == "Menu");
+    assert(std::string(tr(Lang::Russian, Str::Quit)) == "Quit");
+    i18n_load(Lang::Russian, "\x01\x02 garbage without equals");
+    assert(std::string(tr(Lang::Russian, Str::Play)) == "Играть");
+    load_languages();
+}
+
 void test_i18n()
 {
+    load_languages();
     for (int i = 0; i < static_cast<int>(Str::Count); i++) {
         std::string en = tr(Lang::English, static_cast<Str>(i));
         std::string ru = tr(Lang::Russian, static_cast<Str>(i));
@@ -665,7 +721,7 @@ void test_i18n()
         assert(!has_cyrillic(en) && has_cyrillic(ru));
         assert(en.find("\xE2\x80\x94") == std::string::npos && ru.find("\xE2\x80\x94") == std::string::npos);
         assert(ru.find("\xE2\x80\x93") == std::string::npos);
-        assert(codepoints(ru) <= 30);
+        assert(codepoints(ru) <= (i >= static_cast<int>(Str::Tutorial11) ? 40u : 30u));
     }
     assert(std::string(tr(Lang::English, Str::Play)) == "Play" && std::string(tr(Lang::Russian, Str::Play)) == "Играть");
     assert(std::string(tr(Lang::Russian, Str::Menu)) == "Меню");
@@ -695,6 +751,90 @@ void test_i18n()
             assert(line.find("\xE2\x80\x94") == std::string::npos);
         }
     }
+}
+
+void test_kv_format()
+{
+    Kv kv = parse_kv("# comment\n\n  alpha = 1  \nbeta=two words\r\n gamma =\nno equals here\n= nokey\nalpha = 5\n");
+    assert(kv.get("alpha") == "5" && kv.get("beta") == "two words" && kv.get("gamma") == "");
+    assert(kv.has("gamma") && !kv.has("nokey") && !kv.has("no equals here"));
+    assert(kv.values.size() == 3);
+    assert(kv.get("missing", "fallback") == "fallback");
+    assert(kv.get_int("alpha", -1, 0, 10) == 5 && kv.get_int("alpha", -1, 0, 4) == -1);
+    assert(kv.get_int("beta", 7, 0, 10) == 7 && kv.get_int("gamma", 8, 0, 10) == 8);
+    assert(parse_kv("").values.empty() && parse_kv("\n\n#x\n").values.empty());
+    assert(parse_kv("a=b=c").get("a") == "b=c");
+    int64_t v = 0;
+    assert(parse_int(" 42 ", v) && v == 42 && parse_int("-7", v) && v == -7);
+    assert(!parse_int("", v) && !parse_int("4x", v) && !parse_int("99999999999999999999", v));
+    Kv words = parse_word_pairs("tag a 1 b 2 c", true);
+    assert(words.get("a") == "1" && words.get("b") == "2" && !words.has("c") && !words.has("tag"));
+    Kv all = parse_word_pairs("a 1 b 2", false);
+    assert(all.get("a") == "1" && all.get("b") == "2");
+    std::string out = write_kv({{"x", "1"}, {"y", "two words"}});
+    assert(out == "x = 1\ny = two words\n");
+    Kv back = parse_kv(out);
+    assert(back.get("y") == "two words");
+    Kv set;
+    set.set("k", "v");
+    set.set_int("n", 12);
+    assert(set.get("k") == "v" && set.get_int("n", 0, 0, 100) == 12);
+}
+
+void test_settings_format()
+{
+    Settings defaults;
+    defaults.shapes = all_shapes();
+    Settings s = defaults;
+    s.grid = 6;
+    s.lift = 60;
+    s.fullscreen = true;
+    s.deal = 2;
+    s.shapes = 0x155;
+    s.rescues = 3;
+    s.undos = 2;
+    s.hold = false;
+    s.volume = 35;
+    s.vibration = false;
+    s.tutorial_seen = true;
+    s.lang = 1;
+    std::string text = serialize_settings(s);
+    assert(text.find("grid = 6\n") != std::string::npos && text.find("lang = 1\n") != std::string::npos);
+    assert(text.find("shapes = 341\n") != std::string::npos);
+    Settings back = parse_settings(text, defaults);
+    assert(back.grid == 6 && back.lift == 60 && back.fullscreen && back.deal == 2 && back.shapes == 0x155);
+    assert(back.rescues == 3 && back.undos == 2 && !back.hold && back.volume == 35 && !back.vibration);
+    assert(back.tutorial_seen && back.lang == 1);
+    Settings partial = parse_settings("grid = 7\nunknown = 3\nvolume = 100\n", defaults);
+    assert(partial.grid == 7 && partial.volume == 100);
+    assert(partial.lift == defaults.lift && partial.rescues == defaults.rescues && partial.hold == defaults.hold);
+    assert(partial.shapes == all_shapes() && partial.lang == defaults.lang);
+    Settings bad = parse_settings("grid = 9\nlift = x\nvolume = 50\ndeal = 7\nshapes = 0\nlang = 5\nhold = 3\n", defaults);
+    assert(bad.grid == defaults.grid && bad.lift == defaults.lift && bad.volume == defaults.volume);
+    assert(bad.deal == defaults.deal && bad.shapes == all_shapes() && bad.lang == defaults.lang);
+    assert(bad.hold == defaults.hold);
+    Settings legacy = parse_settings("grid 6 lift 0 fullscreen 1 rescues 2 deal 1 shapes 7 undos 3 hold 0 volume 0 vibration 0 tutorial 1 lang 1", defaults);
+    assert(legacy.grid == 6 && legacy.lift == 0 && legacy.fullscreen && legacy.rescues == 2 && legacy.deal == 1);
+    assert(legacy.shapes == 7 && legacy.undos == 3 && !legacy.hold && legacy.volume == 0 && !legacy.vibration);
+    assert(legacy.tutorial_seen && legacy.lang == 1);
+    Settings oldest = parse_settings("grid 8 lift 100 fullscreen 0", defaults);
+    assert(oldest.grid == 8 && oldest.lift == 100 && oldest.undos == defaults.undos);
+    Settings empty = parse_settings("", defaults);
+    assert(empty.grid == defaults.grid && empty.shapes == all_shapes());
+    Settings junk = parse_settings("\x01\x02 = = =\n====\n", defaults);
+    assert(junk.grid == defaults.grid);
+    Settings huge = parse_settings("shapes = 99999999999999999999\ngrid = 99999999999999999999\n", defaults);
+    assert(huge.grid == defaults.grid && huge.shapes == all_shapes());
+    assert(serialize_stats(Stats{}).find("games = 0\n") != std::string::npos);
+    Bests b;
+    b.set(7, 410);
+    assert(serialize_bests(b) == "best7 = 410\n");
+    assert(parse_bests("best6 = 20\nbest8 = 90\nbest3 = 5\nbest7 = -4\n").get(8) == 90);
+    assert(parse_bests("best6 = 20\nbest8 = 90\nbest3 = 5\nbest7 = -4\n").get(7) == 0);
+    assert(parse_bests("best6 = 20\nbest1 = 5\nbest9 = 5\n").get(1) == 0 && parse_bests("best9 = 5").get(8) == 0);
+    Stats st = parse_stats("games = 4\ntotal = 100\nstreak = 3\nlines = 8\npieces = 20\nseconds = 90\n");
+    assert(st.games == 4 && st.total_score == 100 && st.best_streak == 3 && st.lines == 8 && st.pieces == 20);
+    assert(st.seconds == 90);
 }
 
 void test_tray_refill()
@@ -778,6 +918,9 @@ int main()
     test_pulses();
     test_stats();
     test_tutorial();
+    test_language_files();
+    test_kv_format();
+    test_settings_format();
     test_i18n();
     test_tray_refill();
     test_deal_fairness();
