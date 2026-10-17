@@ -4,8 +4,10 @@
 
 #include <cstdint>
 
+#include "bests.hpp"
 #include "board.hpp"
 #include "deal.hpp"
+#include "stats.hpp"
 
 constexpr float kBoneHoldMs = 120.0f;
 constexpr float kBoneFadeMs = 220.0f;
@@ -17,6 +19,7 @@ enum MenuButton {
     kMenuSettings,
     kMenuQuit,
     kMenuContinue,
+    kMenuStats,
 };
 
 struct MenuView {
@@ -83,6 +86,12 @@ struct SettingsView {
     int shapes_total = 0;
     bool fullscreen = false;
     bool reset_armed = false;
+    int pressed = -1;
+};
+
+struct StatsView {
+    Stats stats;
+    Bests bests;
     int pressed = -1;
 };
 

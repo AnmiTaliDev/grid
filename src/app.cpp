@@ -62,6 +62,7 @@ void sfx_clear(App& app, int lines, int streak)
 
 void persist_game(App& app)
 {
+    save_stats(app.stats);
     bool active = (app.screen == Screen::Play || app.screen == Screen::Pause) && !app.game.over;
     if (active) {
         save_current_game(app.game, app.previous_best);
@@ -96,6 +97,7 @@ void start_game(App& app)
     app.undos_left = app.settings.undos;
     app.has_undo = false;
     app.undo_pressed = false;
+    app.counted_score = -1;
     drop_saved_game(app);
     app.view = GameView{};
     app.over_pending = false;
@@ -105,6 +107,11 @@ void start_game(App& app)
 void rescue_game(App& app)
 {
     if (game_rescue(app.game)) {
+        if (app.counted_score >= 0) {
+            stats_revert_game_end(app.stats, app.counted_score);
+            app.counted_score = -1;
+            save_stats(app.stats);
+        }
         sfx(app, Sound::Rescue);
         app.has_undo = false;
         app.view = GameView{};
@@ -133,6 +140,7 @@ void continue_game(App& app)
     app.undos_left = app.settings.undos;
     app.has_undo = false;
     app.undo_pressed = false;
+    app.counted_score = -1;
     app.screen = Screen::Play;
 }
 
@@ -146,6 +154,9 @@ void activate_menu(App& app, int which)
         app.reset_armed = false;
         app.panel_pressed = -1;
         app.screen = Screen::Settings;
+    } else if (which == kMenuStats) {
+        app.panel_pressed = -1;
+        app.screen = Screen::Stats;
     } else {
         app.quit = true;
     }
@@ -200,7 +211,7 @@ int menu_hit(const App& app, float x, float y)
     if (app.menu.has_save && inside(menu_button(kMenuContinue).box, x, y)) {
         return kMenuContinue;
     }
-    return -1;
+    return inside(menu_button(kMenuStats).box, x, y) ? kMenuStats : -1;
 }
 
 void play_down(App& app, float x, float y)
@@ -239,6 +250,9 @@ void play_down(App& app, float x, float y)
 
 void finish_move(App& app, const MoveResult& result)
 {
+    if (result.ok) {
+        stats_on_move(app.stats, result.lines, app.game.score.streak);
+    }
     if (result.lines > 0) {
         sfx_clear(app, result.lines, app.game.score.streak);
     } else {
@@ -429,6 +443,8 @@ void pointer_down(App& app, Gfx& g, float x, float y)
         app.panel_pressed = settings_hit(x, y);
     } else if (app.screen == Screen::Pieces) {
         app.panel_pressed = pieces_hit(x, y);
+    } else if (app.screen == Screen::Stats) {
+        app.panel_pressed = inside(stats_layout().back, x, y) ? 0 : -1;
     } else {
         bool chip = app.game.score.score > app.previous_best;
         app.panel_pressed = over_hit(g, x, y, chip, app.game.rescues_left > 0);
@@ -466,6 +482,14 @@ void pointer_up(App& app, Gfx& g, float x, float y)
             } else {
                 go_menu(app);
             }
+        }
+    } else if (app.screen == Screen::Stats) {
+        int hit = inside(stats_layout().back, x, y) ? 0 : -1;
+        int pressed = app.panel_pressed;
+        app.panel_pressed = -1;
+        if (hit >= 0 && hit == pressed) {
+            sfx(app, Sound::Click);
+            go_menu(app);
         }
     } else if (app.screen == Screen::Pieces) {
         int hit = pieces_hit(x, y);
@@ -518,7 +542,7 @@ void key_down(App& app, const SDL_KeyboardEvent& key)
             app.screen = Screen::Play;
         } else if (app.screen == Screen::Pieces) {
             app.screen = Screen::Settings;
-        } else if (app.screen == Screen::Over || app.screen == Screen::Settings) {
+        } else if (app.screen == Screen::Over || app.screen == Screen::Settings || app.screen == Screen::Stats) {
             go_menu(app);
         }
         return;
@@ -527,9 +551,9 @@ void key_down(App& app, const SDL_KeyboardEvent& key)
         return;
     }
     if (key.key == SDLK_TAB) {
-        int order[4] = {kMenuContinue, kMenuPlay, kMenuSettings, kMenuQuit};
+        int order[5] = {kMenuContinue, kMenuPlay, kMenuSettings, kMenuStats, kMenuQuit};
         int first = app.menu.has_save ? 0 : 1;
-        int count = 4 - first;
+        int count = 5 - first;
         int at = -1;
         for (int i = 0; i < count; i++) {
             if (order[first + i] == app.menu.focus) {
@@ -572,6 +596,7 @@ void app_init(App& app, Gfx& g, SDL_Window* window)
     }
     apply_titlebar(app, g);
     app.bests = load_bests();
+    app.stats = load_stats();
     app.settings = load_settings();
     audio_init(app.audio, app.settings.volume);
     if (app.settings.fullscreen && fullscreen_supported()) {
@@ -651,6 +676,11 @@ void app_update(App& app, float dt_ms)
     if (app.screen == Screen::Pause) {
         return;
     }
+    app.play_ms += dt_ms;
+    while (app.play_ms >= 1000.0f) {
+        app.play_ms -= 1000.0f;
+        app.stats.seconds++;
+    }
     GameView& v = app.view;
     if (v.bone_mask) {
         v.bone_ms += dt_ms;
@@ -675,6 +705,9 @@ void app_update(App& app, float dt_ms)
         if (app.over_ms >= kOverDelayMs) {
             app.over_pending = false;
             commit_best(app);
+            stats_on_game_end(app.stats, app.game.score.score);
+            app.counted_score = app.game.score.score;
+            save_stats(app.stats);
             app.panel_pressed = -1;
             sfx(app, Sound::GameOver);
             app.screen = Screen::Over;
@@ -700,6 +733,12 @@ void app_draw(App& app, Gfx& g)
         pv.score = app.game.score.score;
         pv.pressed = app.panel_pressed;
         draw_pause(g, pv);
+    } else if (app.screen == Screen::Stats) {
+        StatsView sv;
+        sv.stats = app.stats;
+        sv.bests = app.bests;
+        sv.pressed = app.panel_pressed;
+        draw_stats(g, sv);
     } else if (app.screen == Screen::Pieces) {
         PiecesView pv;
         pv.shapes = app.settings.shapes;

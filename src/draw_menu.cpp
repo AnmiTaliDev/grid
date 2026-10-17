@@ -34,14 +34,18 @@ ButtonSpec menu_button(int which)
                 palette::kInk, true};
     }
     if (which == kMenuSettings) {
-        return {{80, 640, 188, 60}, 14, 4, palette::kButtonFace, palette::kBedEdge, "Settings", {17, 600},
+        return {{80, 640, 120, 60}, 14, 4, palette::kButtonFace, palette::kBedEdge, "Settings", {17, 600},
                 palette::kBone};
     }
     if (which == kMenuContinue) {
         return {{80, 464, 380, 60}, 14, 4, palette::kButtonFace, palette::kBedEdge, "Continue", {22, 700},
                 palette::kBone};
     }
-    return {{272, 640, 188, 60}, 14, 4, palette::kButtonFace, palette::kBedEdge, "Quit", {17, 600}, palette::kBone};
+    if (which == kMenuStats) {
+        return {{210, 640, 120, 60}, 14, 4, palette::kButtonFace, palette::kBedEdge, "Stats", {17, 600},
+                palette::kBone};
+    }
+    return {{340, 640, 120, 60}, 14, 4, palette::kButtonFace, palette::kBedEdge, "Quit", {17, 600}, palette::kBone};
 }
 
 void draw_backdrop(Gfx& g)
@@ -67,6 +71,7 @@ void draw_menu(Gfx& g, const MenuView& v)
     for (int i = 0; i < 3; i++) {
         draw_button(g, menu_button(i), v.pressed == i, v.focus == i);
     }
+    draw_button(g, menu_button(kMenuStats), v.pressed == kMenuStats, v.focus == kMenuStats);
     if (v.has_save) {
         draw_button(g, menu_button(kMenuContinue), v.pressed == kMenuContinue, v.focus == kMenuContinue);
     }

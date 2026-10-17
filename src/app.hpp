@@ -9,6 +9,7 @@
 #include "game.hpp"
 #include "gfx.hpp"
 #include "settings.hpp"
+#include "stats.hpp"
 #include "views.hpp"
 
 enum class Screen {
@@ -17,6 +18,7 @@ enum class Screen {
     Pause,
     Settings,
     Pieces,
+    Stats,
     Over,
 };
 
@@ -25,6 +27,9 @@ struct App {
     Screen screen = Screen::Menu;
     Game game;
     Bests bests;
+    Stats stats;
+    int counted_score = -1;
+    float play_ms = 0;
     int previous_best = 0;
     MenuView menu;
     GameView view;

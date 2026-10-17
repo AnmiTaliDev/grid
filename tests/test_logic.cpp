@@ -12,7 +12,9 @@
 #include "game.hpp"
 #include "mixer.hpp"
 #include "pulses.hpp"
+#include "format.hpp"
 #include "serialize.hpp"
+#include "stats.hpp"
 #include "synth.hpp"
 
 namespace {
@@ -570,6 +572,41 @@ void test_pulses()
     assert(pulse_for(Sound::GameOver).ms > pulse_for(Sound::Place).ms);
 }
 
+void test_stats()
+{
+    Stats s;
+    assert(stats_average(s) == 0);
+    stats_on_move(s, 0, 0);
+    stats_on_move(s, 2, 3);
+    stats_on_move(s, 1, 2);
+    assert(s.pieces == 3 && s.lines == 3 && s.best_streak == 3);
+    stats_on_game_end(s, 1000);
+    stats_on_game_end(s, 2001);
+    assert(s.games == 2 && s.total_score == 3001 && stats_average(s) == 1500);
+    stats_revert_game_end(s, 2001);
+    assert(s.games == 1 && s.total_score == 1000 && stats_average(s) == 1000);
+    stats_revert_game_end(s, 1000);
+    stats_revert_game_end(s, 1000);
+    assert(s.games == 0 && s.total_score == 0);
+    s.seconds = 4000;
+    s.games = 7;
+    s.total_score = 123456;
+    Stats back = parse_stats(serialize_stats(s));
+    assert(back.games == 7 && back.total_score == 123456 && back.seconds == 4000);
+    assert(back.best_streak == 3 && back.lines == 3 && back.pieces == 3);
+    assert(parse_stats("").games == 0 && parse_stats("junk 5").games == 0);
+    Stats partial = parse_stats("stats games 4 total");
+    assert(partial.games == 4 && partial.total_score == 0);
+    Stats negative = parse_stats("stats games -5 lines 9");
+    assert(negative.games == 0 && negative.lines == 9);
+    Stats big = parse_stats("stats games 99999999999 total 5");
+    assert(big.games == 2000000000 && stats_average(big) >= 0);
+    assert(format_duration(0) == "0s" && format_duration(45) == "45s");
+    assert(format_duration(60) == "1m 00s" && format_duration(725) == "12m 05s");
+    assert(format_duration(3600) == "1h 00m" && format_duration(3725) == "1h 02m");
+    assert(format_duration(-4) == "0s" && format_duration(360000) == "100h 00m");
+}
+
 void test_tray_refill()
 {
     Game game;
@@ -649,6 +686,7 @@ int main()
     test_hold_ends_game_correctly();
     test_synth_and_mixer();
     test_pulses();
+    test_stats();
     test_tray_refill();
     test_deal_fairness();
     test_score_and_streak();

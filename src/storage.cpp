@@ -70,6 +70,45 @@ void delete_saved_game()
     }
 }
 
+static std::string stats_path()
+{
+    char* dir = SDL_GetPrefPath("dev.anmitali", "grid");
+    if (!dir) {
+        return "";
+    }
+    std::string path = std::string(dir) + "stats.txt";
+    SDL_free(dir);
+    return path;
+}
+
+Stats load_stats()
+{
+    std::string path = stats_path();
+    if (path.empty()) {
+        return Stats{};
+    }
+    size_t size = 0;
+    void* data = SDL_LoadFile(path.c_str(), &size);
+    if (!data) {
+        return Stats{};
+    }
+    std::string text(static_cast<const char*>(data), size);
+    SDL_free(data);
+    return parse_stats(text);
+}
+
+void save_stats(const Stats& stats)
+{
+    std::string path = stats_path();
+    if (path.empty()) {
+        return;
+    }
+    std::string text = serialize_stats(stats);
+    if (!SDL_SaveFile(path.c_str(), text.data(), text.size())) {
+        SDL_Log("Cannot save statistics: %s", SDL_GetError());
+    }
+}
+
 Bests load_bests()
 {
     std::string path = best_path();

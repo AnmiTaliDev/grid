@@ -45,6 +45,16 @@ struct PiecesLayout {
 };
 
 ButtonSpec menu_button(int which);
+struct StatsLayout {
+    Rect panel;
+    float title_top;
+    float rows_top;
+    float row_height;
+    Rect back;
+};
+
+StatsLayout stats_layout();
+ButtonSpec stats_back_button(const StatsLayout& l);
 PiecesLayout pieces_layout();
 ButtonSpec pieces_back_button(const PiecesLayout& l);
 SettingsLayout settings_layout();
@@ -64,6 +74,7 @@ void draw_backdrop(Gfx& g);
 void draw_menu(Gfx& g, const MenuView& v);
 void draw_settings(Gfx& g, const SettingsView& v);
 void draw_pieces(Gfx& g, const PiecesView& v);
+void draw_stats(Gfx& g, const StatsView& v);
 void draw_game(Gfx& g, const GameView& v);
 void draw_game_over(Gfx& g, const OverView& v);
 void draw_pause(Gfx& g, const PauseView& v);
