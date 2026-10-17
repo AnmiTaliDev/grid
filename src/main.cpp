@@ -9,25 +9,12 @@
 #include <string>
 
 #include "app.hpp"
+#include "assets.hpp"
 #include "draw.hpp"
 #include "icon.hpp"
 #include "layout.hpp"
 #include "sprites.hpp"
 #include "titlebar.hpp"
-
-namespace {
-
-std::string font_path()
-{
-#ifdef SDL_PLATFORM_ANDROID
-    return "Geologica.ttf";
-#else
-    const char* base = SDL_GetBasePath();
-    return std::string(base ? base : "") + "assets/Geologica.ttf";
-#endif
-}
-
-}
 
 int main(int argc, char** argv)
 {
@@ -58,7 +45,7 @@ int main(int argc, char** argv)
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
     Gfx gfx;
-    if (!gfx_init(gfx, renderer, font_path())) {
+    if (!gfx_init(gfx, renderer, asset_path("Geologica.ttf"))) {
         SDL_Log("Graphics init failed: %s", SDL_GetError());
         return 1;
     }

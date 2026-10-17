@@ -76,6 +76,7 @@ struct SettingsView {
     int rescues = 1;
     int undos = 1;
     bool hold = true;
+    int volume = 70;
     int deal = 0;
     int shapes_on = 0;
     int shapes_total = 0;

@@ -5,11 +5,14 @@
 #include <cstdio>
 #include <algorithm>
 #include <algorithm>
+#include <cmath>
 #include <set>
 
 #include "bests.hpp"
 #include "game.hpp"
+#include "mixer.hpp"
 #include "serialize.hpp"
+#include "synth.hpp"
 
 namespace {
 
@@ -488,6 +491,63 @@ void test_hold_ends_game_correctly()
     assert(!deserialize_game(bad, old, previous));
 }
 
+void test_synth_and_mixer()
+{
+    for (int i = 0; i < static_cast<int>(Sound::Count); i++) {
+        std::vector<float> s = synth_sound(static_cast<Sound>(i));
+        assert(s.size() > kSampleRate / 50 && s.size() < kSampleRate * 2);
+        float peak = 0;
+        for (float v : s) {
+            assert(std::isfinite(v) && v >= -1.0f && v <= 1.0f);
+            peak = std::max(peak, std::fabs(v));
+        }
+        assert(peak > 0.05f);
+        assert(std::fabs(s.back()) < 0.02f);
+    }
+    for (int lines = 1; lines <= kMaxClearLines; lines++) {
+        for (int streak = 0; streak <= kMaxClearSteps + 2; streak++) {
+            std::vector<float> s = synth_clear(lines, streak);
+            assert(s.size() > kSampleRate / 10);
+            for (float v : s) {
+                assert(std::isfinite(v) && v >= -1.0f && v <= 1.0f);
+            }
+        }
+    }
+    assert(synth_clear(4, 1).size() > synth_clear(1, 1).size());
+
+    std::vector<float> ones(100, 0.5f);
+    std::vector<float> shorter(40, 0.25f);
+    Mixer m;
+    m.volume = 1.0f;
+    mixer_play(m, ones, 1.0f);
+    mixer_play(m, shorter, 1.0f);
+    std::vector<float> out(60);
+    mixer_render(m, out.data(), 60);
+    assert(std::fabs(out[0] - 0.75f) < 1e-6f && std::fabs(out[39] - 0.75f) < 1e-6f);
+    assert(std::fabs(out[40] - 0.5f) < 1e-6f && std::fabs(out[59] - 0.5f) < 1e-6f);
+    assert(m.voices.size() == 1);
+    mixer_render(m, out.data(), 60);
+    assert(std::fabs(out[39] - 0.5f) < 1e-6f && std::fabs(out[40]) < 1e-6f);
+    assert(m.voices.empty());
+    mixer_render(m, out.data(), 60);
+    assert(out[0] == 0.0f);
+    m.volume = 0.5f;
+    mixer_play(m, ones, 1.0f);
+    mixer_render(m, out.data(), 10);
+    assert(std::fabs(out[0] - 0.25f) < 1e-6f);
+    std::vector<float> loud(10, 1.0f);
+    m.volume = 1.0f;
+    m.voices.clear();
+    mixer_play(m, loud, 1.0f);
+    mixer_play(m, loud, 1.0f);
+    mixer_render(m, out.data(), 10);
+    assert(out[0] == 1.0f);
+    for (size_t i = 0; i < kMaxVoices + 5; i++) {
+        mixer_play(m, loud, 1.0f);
+    }
+    assert(m.voices.size() == kMaxVoices);
+}
+
 void test_tray_refill()
 {
     Game game;
@@ -565,6 +625,7 @@ int main()
     test_bests();
     test_hold();
     test_hold_ends_game_correctly();
+    test_synth_and_mixer();
     test_tray_refill();
     test_deal_fairness();
     test_score_and_streak();

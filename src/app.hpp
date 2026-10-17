@@ -4,6 +4,7 @@
 
 #include <SDL3/SDL.h>
 
+#include "audio.hpp"
 #include "bests.hpp"
 #include "game.hpp"
 #include "gfx.hpp"
@@ -36,6 +37,7 @@ struct App {
     float bar_h = 0;
     Settings settings;
     bool reset_armed = false;
+    Audio audio;
     Game undo_game;
     bool has_undo = false;
     int undos_left = 0;

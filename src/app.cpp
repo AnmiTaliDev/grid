@@ -43,6 +43,11 @@ void bar_click(App& app, float x, float y)
     }
 }
 
+void sfx(App& app, Sound sound)
+{
+    audio_play(app.audio, sound);
+}
+
 void persist_game(App& app)
 {
     bool active = (app.screen == Screen::Play || app.screen == Screen::Pause) && !app.game.over;
@@ -88,6 +93,7 @@ void start_game(App& app)
 void rescue_game(App& app)
 {
     if (game_rescue(app.game)) {
+        sfx(app, Sound::Rescue);
         app.has_undo = false;
         app.view = GameView{};
         app.over_pending = false;
@@ -200,6 +206,7 @@ void play_down(App& app, float x, float y)
     }
     if (app.settings.hold && app.game.hold >= 0 && inside(kHoldRect, x, y)) {
         app.view.return_slot = -1;
+        sfx(app, Sound::Pick);
         app.view.hand_slot = kTraySize;
         app.view.pointer_x = x;
         app.view.pointer_y = y - static_cast<float>(app.settings.lift);
@@ -208,6 +215,7 @@ void play_down(App& app, float x, float y)
     for (int i = 0; i < kTraySize; i++) {
         Rect slot = {kTrayXs[i], kTrayY, kTraySlotSize, kTraySlotSize};
         if (app.game.tray[i] >= 0 && inside(slot, x, y)) {
+            sfx(app, Sound::Pick);
             app.view.return_slot = -1;
             app.view.hand_slot = i;
             app.view.pointer_x = x;
@@ -219,6 +227,11 @@ void play_down(App& app, float x, float y)
 
 void finish_move(App& app, const MoveResult& result)
 {
+    if (result.lines > 0) {
+        audio_play_clear(app.audio, result.lines, app.game.score.streak);
+    } else {
+        sfx(app, Sound::Place);
+    }
     if (result.lines > 0) {
         app.view.bone_mask = result.cleared;
         app.view.bone_ms = 0;
@@ -239,6 +252,7 @@ void finish_move(App& app, const MoveResult& result)
 void undo_move(App& app)
 {
     app.game = app.undo_game;
+    sfx(app, Sound::Undo);
     app.has_undo = false;
     app.undos_left--;
     app.view = GameView{};
@@ -258,6 +272,7 @@ void play_up(App& app, float x, float y)
     if (app.view.pause_pressed) {
         app.view.pause_pressed = false;
         if (inside(kPauseButton, x, y)) {
+            sfx(app, Sound::Click);
             cancel_hand(app);
             app.screen = Screen::Pause;
         }
@@ -279,8 +294,10 @@ void play_up(App& app, float x, float y)
         app.has_undo = true;
         finish_move(app, game_place(app.game, slot, drop.row, drop.col));
     } else if (app.settings.hold && slot < kTraySize && inside(reach, x, y) && game_swap_hold(app.game, slot)) {
+        sfx(app, Sound::Hold);
         persist_game(app);
     } else {
+        sfx(app, Sound::Invalid);
         app.view.return_slot = slot;
         app.view.return_t = 0;
     }
@@ -332,6 +349,9 @@ void settings_activate(App& app, int hit)
         app.screen = Screen::Pieces;
     } else if (id == kSettingDeal) {
         app.settings.deal = next_deal(app.settings.deal);
+    } else if (id == kSettingSound) {
+        app.settings.volume = next_volume(app.settings.volume);
+        audio_set_volume(app.audio, app.settings.volume);
     } else if (id == kSettingUndo) {
         app.settings.undos = next_undos(app.settings.undos);
     } else if (id == kSettingHold) {
@@ -413,6 +433,7 @@ void pointer_up(App& app, Gfx& g, float x, float y)
         int pressed = app.menu.pressed;
         app.menu.pressed = -1;
         if (hit >= 0 && hit == pressed) {
+            sfx(app, Sound::Click);
             activate_menu(app, hit);
         }
     } else if (app.screen == Screen::Play) {
@@ -422,6 +443,7 @@ void pointer_up(App& app, Gfx& g, float x, float y)
         int pressed = app.panel_pressed;
         app.panel_pressed = -1;
         if (hit >= 0 && hit == pressed) {
+            sfx(app, Sound::Click);
             if (hit == 0) {
                 app.screen = Screen::Play;
             } else {
@@ -433,6 +455,7 @@ void pointer_up(App& app, Gfx& g, float x, float y)
         int pressed = app.panel_pressed;
         app.panel_pressed = -1;
         if (hit >= 0 && hit == pressed) {
+            sfx(app, Sound::Click);
             pieces_activate(app, hit);
         }
     } else if (app.screen == Screen::Settings) {
@@ -440,6 +463,7 @@ void pointer_up(App& app, Gfx& g, float x, float y)
         int pressed = app.panel_pressed;
         app.panel_pressed = -1;
         if (hit >= 0 && hit == pressed) {
+            sfx(app, Sound::Click);
             settings_activate(app, hit);
         }
     } else {
@@ -448,6 +472,7 @@ void pointer_up(App& app, Gfx& g, float x, float y)
         int pressed = app.panel_pressed;
         app.panel_pressed = -1;
         if (hit >= 0 && hit == pressed) {
+            sfx(app, Sound::Click);
             if (hit == 2) {
                 rescue_game(app);
             } else if (hit == 0) {
@@ -531,6 +556,7 @@ void app_init(App& app, Gfx& g, SDL_Window* window)
     apply_titlebar(app, g);
     app.bests = load_bests();
     app.settings = load_settings();
+    audio_init(app.audio, app.settings.volume);
     if (app.settings.fullscreen && fullscreen_supported()) {
         SDL_SetWindowFullscreen(window, true);
     }
@@ -633,6 +659,7 @@ void app_update(App& app, float dt_ms)
             app.over_pending = false;
             commit_best(app);
             app.panel_pressed = -1;
+            sfx(app, Sound::GameOver);
             app.screen = Screen::Over;
         }
     }
@@ -690,6 +717,7 @@ void app_draw(App& app, Gfx& g)
 
 void app_shutdown(App& app)
 {
+    audio_shutdown(app.audio);
     persist_game(app);
     commit_best(app);
     save_settings(app.settings);

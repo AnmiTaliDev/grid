@@ -37,8 +37,16 @@ add_library(grid_logic STATIC
     src/drop.cpp
     src/serialize.cpp
     src/bests.cpp
+    src/sound_names.cpp
+    src/mixer.cpp
 )
 target_include_directories(grid_logic PUBLIC src)
+
+add_library(grid_synth STATIC
+    src/synth.cpp
+    src/wav.cpp
+)
+target_include_directories(grid_synth PUBLIC src)
 
 add_library(grid_render STATIC
     src/raster.cpp
@@ -54,6 +62,8 @@ add_library(grid_render STATIC
     src/draw_settings.cpp
     src/draw_pieces.cpp
     src/settings.cpp
+    src/audio.cpp
+    src/assets.cpp
 )
 target_link_libraries(grid_render PUBLIC grid_logic SDL3::SDL3 SDL3_ttf::SDL3_ttf)
 
@@ -76,9 +86,17 @@ file(COPY ${CMAKE_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})
 
 enable_testing()
 
+add_executable(make_sounds tools/make_sounds.cpp)
+target_link_libraries(make_sounds PRIVATE grid_synth grid_logic)
+
 add_executable(test_logic tests/test_logic.cpp)
-target_link_libraries(test_logic PRIVATE grid_logic)
+target_link_libraries(test_logic PRIVATE grid_logic grid_synth)
 add_test(NAME logic COMMAND test_logic)
+
+add_executable(test_sounds tests/test_sounds.cpp)
+target_link_libraries(test_sounds PRIVATE grid_synth grid_logic SDL3::SDL3)
+target_compile_definitions(test_sounds PRIVATE GRID_ASSETS_DIR="${CMAKE_SOURCE_DIR}/assets")
+add_test(NAME sounds COMMAND test_sounds)
 
 add_executable(test_frames tests/test_frames.cpp tests/frames.cpp)
 target_link_libraries(test_frames PRIVATE grid_render)
